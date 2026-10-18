@@ -253,9 +253,7 @@ El juego se diseña para teléfono en horizontal. Un pulgar sobre cada pedal, si
 
 ### Controles
 
-| Entrada | Acción |
-| --- | --- |
-Los controles se configuran en la pantalla **Controles** (desde el menú y desde la pausa) y la elección se guarda en el teléfono (, clave ). Hay dos esquemas y un interruptor de lados; agregar más opciones es agregar datos en .
+Los controles se configuran en la pantalla **Controles** (desde el menú y desde la pausa) y la elección se guarda en el teléfono (`localStorage`, clave `cabra-rally-controls`). Hay dos esquemas y un interruptor de lados; agregar más opciones es agregar datos en `src/input/scheme.ts`.
 
 **Esquema clásico (por omisión, igual al prototipo):**
 
@@ -266,7 +264,7 @@ Los controles se configuran en la pantalla **Controles** (desde el menú y desde
 | Teclado: flecha derecha, D, flecha arriba, espacio | Gas |
 | Teclado: flecha izquierda, A, flecha abajo | Freno |
 
-**Esquema pedales y flechas** (propuesto por Emir el 2026-10-18): gas y freno solo avanzan y frenan; dos flechas inclinan el carro. En el aire la flecha hace girar con ; en el suelo inclina con  = 9 (por debajo de unos 8 no alcanza a levantar la rueda delantera; con 9 un toque de medio segundo con gas levanta un caballito controlable y mantenerla unos 2 s voltea el carro).
+**Esquema pedales y flechas** (propuesto por Emir el 2026-10-18): gas y freno solo avanzan y frenan; dos flechas inclinan el carro. En el aire la flecha hace girar con `airTorque`; en el suelo inclina con `LEAN.torque` = 9 (por debajo de unos 8 no alcanza a levantar la rueda delantera; con 9 un toque de medio segundo con gas levanta un caballito controlable y mantenerla unos 2 s voltea el carro).
 
 | Entrada | Acción |
 | --- | --- |

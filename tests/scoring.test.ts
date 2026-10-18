@@ -5,6 +5,7 @@ import { FREE_MODE } from '../src/core/modes';
 import { newCar, type Car } from '../src/core/physics';
 import { createRun, updateRun } from '../src/core/run';
 import { createScoring, SCORING, updateScoring, type ScoreEvent } from '../src/core/scoring';
+import { slopeAt, terrain } from '../src/core/terrain';
 import { describeScore } from '../src/ui/strings';
 import { holdGas, leveler, mixed, type Driver } from './drivers';
 
@@ -125,6 +126,22 @@ describe('free mode runs', () => {
     expect(run.phase).toBe('over');
     return events;
   }
+
+  it('never lets the driver head sink into the ground, not even after the crash', () => {
+    for (const driver of [holdGas, leveler(0.1), mixed(4, 15), mixed(21, 10)]) {
+      const run = createRun(FREE_MODE, 'play');
+      const h = run.shape.head;
+      let deepest = 0;
+      for (let f = 0; f < 60 * 180 && run.phase !== 'over'; f++) {
+        updateRun(run, DT, driver(f, run.car));
+        const c = run.car, ca = Math.cos(c.a), sa = Math.sin(c.a);
+        const cx = c.x + h.x * ca - h.y * sa, cy = c.y + h.x * sa + h.y * ca, sl = slopeAt(cx);
+        deepest = Math.max(deepest, h.r - (cy - terrain(cx)) / Math.sqrt(1 + sl * sl));
+      }
+      // with the prototype's shape the head ends up more than 2 m under the ground
+      expect(deepest).toBeLessThan(0.2);
+    }
+  });
 
   it('fires every kind of score at least once in scripted runs', () => {
     const kinds = new Set<string>();

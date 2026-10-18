@@ -51,10 +51,20 @@ export function newCar(x: number, td: Readonly<TerrainConfig> = DEFAULT_TERRAIN)
  * the ground. With it, stepCar matches the prototype exactly. The game's shapes are in vehicle.ts.
  */
 export const PROTOTYPE_SHAPE: Readonly<CarShape> = {
+  collision: 'prototype',
   head: { x: PHY.headX, y: PHY.headY, r: PHY.headR },
   extraCrash: [],
   body: { points: [], k: 0, c: 0, mu: 0 },
 };
+
+/**
+ * How deep a circle centered at (cx, cy) with radius r goes into the ground, measured along the
+ * ground normal (treating the ground as straight under the circle). inv is 1 / sqrt(1 + slope^2)
+ * at cx. Positive means touching.
+ */
+function circleDepth(cx: number, cy: number, r: number, inv: number, td: Readonly<TerrainConfig>): number {
+  return r - (cy - terrain(cx, td)) * inv;
+}
 
 /**
  * One physics step. thr in [-1, 1]: positive is gas, negative is brake or reverse.
@@ -95,27 +105,29 @@ export function stepCar(car: Car, thr: number, dt: number, noCrash: boolean, td:
     fx += Fx; fy += Fy;
     tq += (px - car.x) * Fy - (py - car.y) * Fx;
   }
-  // Chassis contact (not in the prototype): the bottom of each body circle pushes out of the
-  // ground along its normal and slides with friction, so the car scrapes instead of sinking.
-  const body = shape.body;
-  for (let i = 0; i < body.points.length; i++) {
-    const p = body.points[i];
-    const px = car.x + p.x * ca - p.y * sa, py = car.y + p.x * sa + p.y * ca - p.r;
-    const d = terrain(px, td) - py;
-    if (d <= 0) continue;
-    contacts++;
-    const sl = slopeAt(px, td), inv = 1 / Math.sqrt(1 + sl * sl);
-    const nx = -sl * inv, ny = inv, tx = inv, ty = sl * inv;
-    const rx = px - car.x, ry = py - car.y;
-    const vx = car.vx - car.w * ry, vy = car.vy + car.w * rx;
-    const vn = vx * nx + vy * ny, vt = vx * tx + vy * ty;
-    let Fn = body.k * d - body.c * vn;
-    if (Fn < 0) Fn = 0;
-    const cap = body.mu * Fn;
-    const Ft = -clamp(vt * 6, -cap, cap);
-    const Fx = Fn * nx + Ft * tx, Fy = Fn * ny + Ft * ty;
-    fx += Fx; fy += Fy;
-    tq += rx * Fy - ry * Fx;
+  // Solid contact (not in the prototype): chassis circles and crash zones push out of the ground
+  // along its normal and slide with friction, so the car scrapes instead of sinking.
+  if (shape.collision === 'solid') {
+    const body = shape.body, n = body.points.length, total = n + 1 + shape.extraCrash.length;
+    for (let i = 0; i < total; i++) {
+      const z = i < n ? body.points[i] : i === n ? shape.head : shape.extraCrash[i - n - 1];
+      const cx = car.x + z.x * ca - z.y * sa, cy = car.y + z.x * sa + z.y * ca;
+      const sl = slopeAt(cx, td), inv = 1 / Math.sqrt(1 + sl * sl);
+      const d = circleDepth(cx, cy, z.r, inv, td);
+      if (d <= 0) continue;
+      contacts++;
+      const nx = -sl * inv, ny = inv, tx = inv, ty = sl * inv;
+      const rx = cx - nx * z.r - car.x, ry = cy - ny * z.r - car.y;
+      const vx = car.vx - car.w * ry, vy = car.vy + car.w * rx;
+      const vn = vx * nx + vy * ny, vt = vx * tx + vy * ty;
+      let Fn = body.k * d - body.c * vn;
+      if (Fn < 0) Fn = 0;
+      const cap = body.mu * Fn;
+      const Ft = -clamp(vt * 6, -cap, cap);
+      const Fx = Fn * nx + Ft * tx, Fy = Fn * ny + Ft * ty;
+      fx += Fx; fy += Fy;
+      tq += rx * Fy - ry * Fx;
+    }
   }
   if (contacts === 0) { tq += PHY.airTorque * thr - car.w * PHY.airDamp; car.air += dt; }
   else { tq -= car.w * 0.5; car.air = 0; }
@@ -125,12 +137,17 @@ export function stepCar(car: Car, thr: number, dt: number, noCrash: boolean, td:
 
   if (noCrash) return false;
   ca = Math.cos(car.a); sa = Math.sin(car.a);
-  const head = shape.head;
-  const hx = car.x + head.x * ca - head.y * sa, hy = car.y + head.x * sa + head.y * ca;
-  if (hy - head.r < terrain(hx, td)) return true;
-  for (const z of shape.extraCrash) {
-    const zx = car.x + z.x * ca - z.y * sa, zy = car.y + z.x * sa + z.y * ca;
-    if (zy - z.r < terrain(zx, td)) return true;
+  if (shape.collision === 'prototype') {
+    const head = shape.head;
+    const hx = car.x + head.x * ca - head.y * sa, hy = car.y + head.x * sa + head.y * ca;
+    if (hy - head.r < terrain(hx, td)) return true;
+  } else {
+    for (let i = 0; i <= shape.extraCrash.length; i++) {
+      const z = i === 0 ? shape.head : shape.extraCrash[i - 1];
+      const cx = car.x + z.x * ca - z.y * sa, cy = car.y + z.x * sa + z.y * ca;
+      const sl = slopeAt(cx, td);
+      if (circleDepth(cx, cy, z.r, 1 / Math.sqrt(1 + sl * sl), td) > 0) return true;
+    }
   }
   const slow = car.vx * car.vx + car.vy * car.vy < 2;
   if (ca < -0.3 && slow) car.stuck += dt; else car.stuck = 0;

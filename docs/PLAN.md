@@ -172,13 +172,14 @@ Medido en la fase 1 con los valores actuales: con gas sostenido desde la salida,
 | 2026-10-18 | `c` | 11 | 16 | Emir sintió que rebota mucho al aterrizar. En partidas simuladas los rebotes tras aterrizar bajan de 4 de 17 (hasta 0.42 s en el aire otra vez) a 0 o 1. También baja el empujón de giro al pasar el borde de la rampa (sin pedal, de 30° a 20°). |
 | 2026-10-18 | `airTorque` | 8 | 9 | Compensa el cambio de `c`: con gas sostenido la primera rampa vuelve a dar una voltereta y aterriza (344°, antes 342°). |
 | 2026-10-18 | Contacto de carrocería (nuevo) | sin contacto | 5 círculos, dureza 800, amortiguación 34, fricción 0.5 | La carrocería se metía hasta 1.5 m en el suelo al aterrizar de nariz o de cola y al pegar contra la bajada de una rampa. Ahora raspa: el hundimiento queda por debajo de 0.3 m. Vive en `DEFAULT_CAR_SHAPE` (`src/core/vehicle.ts`), no en `PHY`. |
+| 2026-10-18 | Colisión sólida (nuevo) | la cabeza se revisaba en un punto y no era sólida | cabeza, zonas extra y carrocería como círculos contra la pendiente, y todos sólidos | Emir vio la cabeza meterse bajo el piso. Pasaba sobre todo en los 0.9 s que el carro sigue rodando tras el choque: la cabeza se hundía más de 2 m. Ahora queda por debajo de 0.2 m. En pendientes la cabeza choca cuando el círculo de verdad toca el piso, no solo el punto bajo su centro. |
 
 Las pruebas de paridad copian estos valores al código del prototipo antes de comparar, y una prueba exige que la lista `TUNED` de `tests/parity.test.ts` coincida con esta tabla.
 
 **Pendientes de ajuste** (anotados por Emir el 2026-10-18; la fase 3 sigue abierta y se ajusta con el tiempo):
 
 - **Rebote al aterrizar:** atendido el 2026-10-18 (`c` de 11 a 16 y contacto de carrocería). Falta que Emir lo confirme en el teléfono.
-- **Hitbox:** desde el 2026-10-18 es un dato por personaje (`CarShape` en `src/core/vehicle.ts`): la cabeza del conductor (se dibuja y choca en el mismo círculo), zonas de choque extra (orejas, sombreros) y los círculos de la carrocería que raspan sin chocar. La regla de boca abajo y detenido sigue igual. En el panel `?ajuste` se pueden ver las zonas y cambiar el tamaño de la cabeza. En la fase 5 cada `AnimalSpec` trae su propia forma.
+- **Hitbox:** desde el 2026-10-18 es un dato por personaje (`CarShape` en `src/core/vehicle.ts`): la cabeza del conductor (se dibuja y choca en el mismo círculo), zonas de choque extra (orejas, sombreros) y los círculos de la carrocería que raspan sin chocar. Con `collision: "solid"` todos esos círculos se miden contra la pendiente y ninguno se hunde, ni después del choque. La regla de boca abajo y detenido sigue igual. En el panel `?ajuste` se pueden ver las zonas y cambiar el tamaño de la cabeza. En la fase 5 cada `AnimalSpec` trae su propia forma.
 - **Cámara:** sin quejas hasta ahora; falta confirmarla con calma (perilla "Cámara: alejar" del panel).
 
 **Pruebas automáticas que debe cumplir `physics.test.ts`:**

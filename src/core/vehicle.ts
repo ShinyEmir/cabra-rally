@@ -14,7 +14,7 @@ export interface Circle {
 export interface BodyContact {
   /** Chassis circles that touch the ground without crashing: the car scrapes instead of sinking. */
   points: Circle[];
-  /** Ground stiffness and damping for those points. */
+  /** Ground stiffness and damping for those circles, and for the crash zones in solid mode. */
   k: number;
   c: number;
   /** Sliding friction while scraping. */
@@ -22,6 +22,13 @@ export interface BodyContact {
 }
 
 export interface CarShape {
+  /**
+   * prototype: only the point under the head center is tested and nothing else touches the
+   * ground (the prototype's behavior, kept for parity tests).
+   * solid: head, extra zones and chassis are circles tested against the slope of the ground,
+   * and all of them push out of it, so nothing sinks, not even after a crash.
+   */
+  collision: 'prototype' | 'solid';
   /** Driver head: drawn here, and the run ends when it touches the ground. */
   head: Circle;
   /** More crash zones beyond the head. */
@@ -34,6 +41,7 @@ export interface CarShape {
  * (x from -1.35 to 1.35, y from -0.38 to 0.40, corner radius 0.22).
  */
 export const DEFAULT_CAR_SHAPE: Readonly<CarShape> = {
+  collision: 'solid',
   head: { x: PHY.headX, y: PHY.headY, r: PHY.headR },
   extraCrash: [],
   body: {

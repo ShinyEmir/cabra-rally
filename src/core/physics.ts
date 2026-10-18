@@ -4,14 +4,16 @@
 import { clamp } from './math';
 import { DEFAULT_TERRAIN, slopeAt, terrain, type TerrainConfig } from './terrain';
 
+// Values tuned away from the prototype are listed in tests/parity.test.ts (TUNED) and in
+// the parameter table of docs/PLAN.md. Mutable so the ?ajuste panel can try values live.
 export const PHY = {
   g: 9.8, k: 150, c: 11, maxTravel: 0.5,
   r: 0.4, s0: 0.35, wx: 0.85, wy: 0.2,
   engine: 6.2, brake: 5.5, reverse: 2.4, vmax: 15, vrev: 5, mu: 1.25,
-  inertia: 1.1, airTorque: 11, airDamp: 1.0,
+  inertia: 1.1, airTorque: 8, airDamp: 1.0,
   headX: 0.15, headY: 0.82, headR: 0.3,
   dt: 1 / 240,
-} as const;
+};
 
 export interface Wheel {
   /** In contact with the ground. */

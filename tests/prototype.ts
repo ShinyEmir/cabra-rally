@@ -22,6 +22,8 @@ export interface ProtoGame {
   };
   keys: { gas: boolean; brake: boolean };
   TD: TerrainConfig;
+  /** The prototype's own PHY object; tests copy the port's values into it. */
+  PHY: Record<string, number>;
   pops: ProtoPop[];
   startGame(mode: 'free' | 'story'): void;
   frameUpdate(dt: number): void;
@@ -37,9 +39,9 @@ function section(from: string, to: string): string {
 }
 
 /** Only the PHYSICS-START..PHYSICS-END block. */
-export function loadPrototypePhysics(): Pick<ProtoGame, 'TD' | 'newCar' | 'stepCar'> {
+export function loadPrototypePhysics(): Pick<ProtoGame, 'TD' | 'PHY' | 'newCar' | 'stepCar'> {
   const code = section('// PHYSICS-START', '// PHYSICS-END');
-  return new Function(`'use strict';\n${code}\nreturn { TD: TD, newCar: newCar, stepCar: stepCar };`)() as Pick<ProtoGame, 'TD' | 'newCar' | 'stepCar'>;
+  return new Function(`'use strict';\n${code}\nreturn { TD: TD, PHY: PHY, newCar: newCar, stepCar: stepCar };`)() as Pick<ProtoGame, 'TD' | 'PHY' | 'newCar' | 'stepCar'>;
 }
 
 /** Physics, setup and game flow, up to the drawing section. */
@@ -61,7 +63,7 @@ export function loadPrototypeGame(): ProtoGame {
   const body = `'use strict';\n${code}\n` +
     // a later function declaration replaces the prototype's DOM-based pop()
     'function pop(text, pts, small) { __pops.push({ text: text, pts: pts || 0, small: !!small }); }\n' +
-    'return { G: G, keys: keys, TD: TD, startGame: startGame, frameUpdate: frameUpdate, newCar: newCar, stepCar: stepCar };';
+    'return { G: G, keys: keys, TD: TD, PHY: PHY, startGame: startGame, frameUpdate: frameUpdate, newCar: newCar, stepCar: stepCar };';
   const api = new Function('document', 'localStorage', '__pops', body)(document, localStorage, pops) as Omit<ProtoGame, 'pops'>;
   return { ...api, pops };
 }

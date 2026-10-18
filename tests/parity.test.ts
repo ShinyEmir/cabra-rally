@@ -1,10 +1,32 @@
 // Runs the prototype's own physics code next to the TypeScript port and checks that both
-// produce exactly the same state on every step for the same inputs.
+// produce exactly the same state on every step for the same inputs. Tuned parameters are
+// copied into the prototype first, so only the code is compared, not the numbers.
 import { describe, expect, it } from 'vitest';
 import { newCar, PHY, stepCar, type Car } from '../src/core/physics';
 import { hash01 } from '../src/core/rng';
 import type { TerrainConfig } from '../src/core/terrain';
 import { loadPrototypePhysics } from './prototype';
+
+/**
+ * Every physics parameter that differs from the prototype, as [prototype, port].
+ * Update this together with the parameter table in docs/PLAN.md.
+ */
+const TUNED: Record<string, [number, number]> = {
+  airTorque: [11, 8],
+};
+
+describe('tuned physics parameters', () => {
+  it('differ from the prototype only where listed', () => {
+    const proto = loadPrototypePhysics();
+    const diff: Record<string, [number, number]> = {};
+    const ours = PHY as Record<string, number>;
+    for (const key of Object.keys(proto.PHY)) {
+      if (!Object.is(proto.PHY[key], ours[key])) diff[key] = [proto.PHY[key], ours[key]];
+    }
+    expect(Object.keys(ours).sort()).toEqual(Object.keys(proto.PHY).sort());
+    expect(diff).toEqual(TUNED);
+  });
+});
 
 type Input = (step: number) => number;
 
@@ -42,6 +64,7 @@ function snapshot(car: Car): number[] {
 
 describe('physics parity with reference/prototype.html', () => {
   const proto = loadPrototypePhysics();
+  Object.assign(proto.PHY, PHY);
 
   for (const sc of SCENARIOS) {
     it(`matches the prototype for 60 s: ${sc.name}`, () => {

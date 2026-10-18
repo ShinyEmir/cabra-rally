@@ -19,6 +19,8 @@ export const CAMERA = {
   /** Meters visible across and down, at minimum. */
   viewWidth: 15,
   viewHeight: 9.5,
+  /** Multiplies both view sizes; above 1 shows more of the world. */
+  zoom: 1,
   maxDpr: 2,
   /** Screen position of the camera point, as a fraction of width and height. */
   anchorX: 0.36,
@@ -30,7 +32,7 @@ export const CAMERA = {
   lift: 0.5,
   rate: 4,
   xBoost: 1.6,
-} as const;
+};
 
 export function measureScreen(canvas: HTMLCanvasElement): Screen {
   const dpr = Math.min(CAMERA.maxDpr, window.devicePixelRatio || 1);
@@ -39,7 +41,7 @@ export function measureScreen(canvas: HTMLCanvasElement): Screen {
   canvas.width = Math.round(w * dpr);
   canvas.height = Math.round(h * dpr);
   const W = canvas.width, H = canvas.height;
-  return { W, H, S: Math.min(W / CAMERA.viewWidth, H / CAMERA.viewHeight) };
+  return { W, H, S: Math.min(W / CAMERA.viewWidth, H / CAMERA.viewHeight) / CAMERA.zoom };
 }
 
 export function followCar(cam: Camera, car: Car, dt: number): void {

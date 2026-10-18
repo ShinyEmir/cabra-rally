@@ -155,7 +155,7 @@ Tras un choque el carro sigue simulándose 0.9 s sin control y luego aparece la 
 | `vmax`, `vrev` | 15, 5 | Velocidad máxima adelante y en reversa |
 | `mu` | 1.25 | Coeficiente de adherencia |
 | `inertia` | 1.1 | Resistencia al giro |
-| `airTorque` | 11 | Fuerza de giro en el aire |
+| `airTorque` | 8 (prototipo: 11) | Fuerza de giro en el aire |
 | `airDamp` | 1.0 | Frenado del giro en el aire |
 | `headX`, `headY`, `headR` | 0.15, 0.82, 0.3 | Cabeza del conductor |
 | `dt` | 1/240 | Paso fijo de simulación |
@@ -163,6 +163,20 @@ Tras un choque el carro sigue simulándose 0.9 s sin control y luego aparece la 
 **Ajuste pendiente de jugabilidad:** al primer intento el giro en el aire era demasiado rápido. Se bajó `airTorque` de 18 a 11 y `airDamp` de 0.25 a 1.0. Si aún se siente rápido, estos dos números son los primeros que hay que mover. Una voltereta completa debe seguir siendo posible en una rampa de modo libre (unos 1.4 s de aire).
 
 Medido en la fase 1 con los valores actuales: con gas sostenido desde la salida, la primera rampa de modo libre (centro en x = 71.5) da 1.52 s de aire, pero el carro gira unos 508° (casi 1.4 vueltas hacia atrás) y cae de cabeza, con choque en x = 86.2 a los 7.8 s. Soltando el gas al despegar también choca, más adelante (x = 103.8). Es la primera evidencia para la fase 3: con gas sostenido el giro todavía se pasa de una vuelta.
+
+**Registro de cambios de la fase 3** (cada cambio con las pruebas corridas antes y después):
+
+| Fecha | Parámetro | Antes | Después | Motivo y efecto medido en la primera rampa (1.5 s de aire) |
+| --- | --- | --- | --- | --- |
+| 2026-10-17 | `airTorque` | 11 | 8 | Emir sintió los giros raros. Con gas sostenido pasa de 471° y choque a 342° (una voltereta) y aterriza; con freno, de 406° a 303°; sin pedal no cambia (30°). |
+
+Las pruebas de paridad copian estos valores al código del prototipo antes de comparar, y una prueba exige que la lista `TUNED` de `tests/parity.test.ts` coincida con esta tabla.
+
+**Pendientes de ajuste** (anotados por Emir el 2026-10-18; la fase 3 sigue abierta y se ajusta con el tiempo):
+
+- **Rebote al aterrizar:** se siente que el carro rebota mucho al tocar el suelo. Las perillas son la suspensión: `c` (amortiguación, sube para rebotar menos) y `k` (rigidez). Ambas están en el panel `?ajuste`. Puede cambiar al maniobrar mejor en el aire, así que se revisa con más pruebas.
+- **Hitbox:** revisar la zona de choque, que hoy es la cabeza del conductor (círculo de radio `headR` en `headX, headY`) más la regla de boca abajo y detenido. Se ajusta junto con el carro y los personajes nuevos, porque su forma cambia la sensación.
+- **Cámara:** sin quejas hasta ahora; falta confirmarla con calma (perilla "Cámara: alejar" del panel).
 
 **Pruebas automáticas que debe cumplir `physics.test.ts`:**
 

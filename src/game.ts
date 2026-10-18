@@ -1,13 +1,14 @@
 // Main loop and game state machine: menu, play, paused, crash, over.
 // Physics runs at a fixed 1/240 s step inside updateRun(); drawing runs at the display rate.
 import { FREE_MODE } from './core/modes';
-import { createRun, distance, updateRun, type Run } from './core/run';
+import { createRun, distance, updateRun, type DriveInput, type Run } from './core/run';
 import type { KeyState } from './input/keyboard';
-import type { PedalState } from './input/pedals';
+import type { TouchState } from './input/pedals';
+import { combineHeld, heldFromKeys, loadControls, saveControls, toDriveInput, type ControlSettings } from './input/scheme';
 import { followCar, measureScreen, type Camera, type Screen } from './render/camera';
 import { renderFrame } from './render/draw-world';
 import { coinBurst, emitDriving, updateParticles, type Particle } from './render/particles';
-import type { Screens } from './ui/screens';
+import type { Screens, View } from './ui/screens';
 import { describeScore, TEXT } from './ui/strings';
 
 export type GameState = 'menu' | 'play' | 'paused' | 'crash' | 'over';
@@ -43,8 +44,11 @@ export class Game {
   private screen: Screen = { W: 1, H: 1, S: 20 };
   private last = performance.now();
   private readonly ctx: CanvasRenderingContext2D;
+  private controls: ControlSettings = loadControls();
+  /** Screen to go back to when the controls screen closes. */
+  private controlsReturn: View = 'menu';
 
-  constructor(private readonly ui: Screens, private readonly keys: KeyState, private readonly pedals: PedalState) {
+  constructor(private readonly ui: Screens, private readonly keys: KeyState, private readonly touch: TouchState) {
     const ctx = ui.canvas.getContext('2d');
     if (!ctx) throw new Error('Canvas 2D is not available');
     this.ctx = ctx;
@@ -55,6 +59,7 @@ export class Game {
   }
 
   start(): void {
+    this.ui.applyControls(this.controls);
     this.resize();
     this.showMenu();
     requestAnimationFrame(this.frame);
@@ -101,7 +106,7 @@ export class Game {
   /** Window lost focus: release every control and pause. */
   suspend(): void {
     this.keys.release();
-    this.pedals.release();
+    this.touch.release();
     this.setPause(true);
   }
 
@@ -114,16 +119,35 @@ export class Game {
     this.ui.show('over');
   }
 
-  private throttle(): number {
-    return (this.keys.gas || this.pedals.gas ? 1 : 0) - (this.keys.brake || this.pedals.brake ? 1 : 0);
+  /** Opens the controls screen from the menu or the pause screen. */
+  openControls(): void {
+    if (this.state !== 'menu' && this.state !== 'paused') return;
+    this.controlsReturn = this.state === 'menu' ? 'menu' : 'pause';
+    this.ui.show('controls');
+  }
+
+  closeControls(): void {
+    this.ui.show(this.controlsReturn);
+  }
+
+  setControls(change: Partial<ControlSettings>): void {
+    this.controls = { ...this.controls, ...change };
+    saveControls(this.controls);
+    this.touch.release();
+    this.ui.applyControls(this.controls);
+  }
+
+  private input(): DriveInput {
+    const held = combineHeld(heldFromKeys(this.controls, this.keys.pressed), this.touch.held);
+    return toDriveInput(this.controls, held);
   }
 
   private update(dt: number): void {
     const run = this.run;
     if (this.state === 'menu') updateRun(run, dt, 0);
     if (this.state === 'play' || this.state === 'crash') {
-      const thr = this.throttle();
-      const ev = updateRun(run, dt, thr);
+      const input = this.input();
+      const ev = updateRun(run, dt, input);
       if (ev.crashed) { this.state = 'crash'; this.ui.pop(TEXT.ouch, 0, true); }
       for (const c of ev.coins) coinBurst(this.parts, c.x, c.y);
       for (const e of ev.score) {
@@ -131,7 +155,7 @@ export class Game {
         this.ui.pop(p.text, e.points, p.small);
       }
       if (ev.finished) this.finishRun();
-      emitDriving(this.parts, run.car, dt, thr > 0 && this.state === 'play');
+      emitDriving(this.parts, run.car, dt, input.thr > 0 && this.state === 'play');
       this.ui.setHud(run.score, distance(run), run.coins);
     }
     updateParticles(this.parts, dt);

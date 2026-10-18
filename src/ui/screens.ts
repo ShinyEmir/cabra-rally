@@ -1,7 +1,9 @@
-// DOM side of the interface: menu, HUD, floating score texts, pause and results.
+// DOM side of the interface: menu, HUD, floating score texts, pause, results and controls.
+import type { TouchButtons } from '../input/pedals';
+import type { ControlSettings } from '../input/scheme';
 import { bestLine, coinsText, formatNumber, metersText, TEXT, type TextKey } from './strings';
 
-export type View = 'menu' | 'play' | 'pause' | 'over';
+export type View = 'menu' | 'play' | 'pause' | 'over' | 'controls';
 
 const POPS = {
   /** At most this many floating texts at once. */
@@ -24,18 +26,35 @@ export interface Results {
 
 export class Screens {
   readonly canvas = byId<HTMLCanvasElement>('world');
-  readonly gasPedal = byId('padGas');
-  readonly brakePedal = byId('padBrake');
+  readonly touchButtons: TouchButtons = {
+    gas: byId('padGas'),
+    brake: byId('padBrake'),
+    tiltBack: byId('padBack'),
+    tiltForward: byId('padForward'),
+  };
   readonly btnFree = byId<HTMLButtonElement>('btnFree');
   readonly btnPause = byId<HTMLButtonElement>('btnPause');
   readonly btnResume = byId<HTMLButtonElement>('btnResume');
   readonly btnQuit = byId<HTMLButtonElement>('btnQuit');
   readonly btnRetry = byId<HTMLButtonElement>('btnRetry');
   readonly btnMenu = byId<HTMLButtonElement>('btnMenu');
+  readonly btnControls = byId<HTMLButtonElement>('btnControls');
+  readonly btnPauseControls = byId<HTMLButtonElement>('btnPauseControls');
+  readonly btnControlsDone = byId<HTMLButtonElement>('btnControlsDone');
+  readonly optClassic = byId<HTMLButtonElement>('optClassic');
+  readonly optArrows = byId<HTMLButtonElement>('optArrows');
+  readonly optSideNormal = byId<HTMLButtonElement>('optSideNormal');
+  readonly optSideSwap = byId<HTMLButtonElement>('optSideSwap');
 
   private readonly menu = byId('menu');
   private readonly over = byId('over');
   private readonly pauseView = byId('pauseView');
+  private readonly controlsView = byId('controlsView');
+  private readonly howTo = byId('howTo');
+  private readonly controlsHow = byId('controlsHow');
+  private readonly sideNormalText = byId('sideNormalText');
+  private readonly sideSwapText = byId('sideSwapText');
+  private readonly layoutPreview = byId('layoutPreview');
   private readonly hud = byId('hud');
   private readonly pads = byId('pads');
   private readonly pops = byId('pops');
@@ -62,9 +81,39 @@ export class Screens {
     this.menu.hidden = view !== 'menu';
     this.over.hidden = view !== 'over';
     this.pauseView.hidden = view !== 'pause';
+    this.controlsView.hidden = view !== 'controls';
     const playing = view === 'play' || view === 'pause';
     this.hud.hidden = !playing;
     this.pads.hidden = !playing;
+  }
+
+  /** Lays out the touch buttons and updates every text that depends on the control settings. */
+  applyControls(c: Readonly<ControlSettings>): void {
+    const arrows = c.scheme === 'arrows';
+    this.pads.classList.toggle('classic', !arrows);
+    this.pads.classList.toggle('with-arrows', arrows);
+    this.pads.classList.toggle('swapped', c.swapSides);
+    const how = arrows ? TEXT.howToArrows : TEXT.howTo;
+    this.howTo.textContent = how;
+    this.controlsHow.textContent = how;
+    this.sideNormalText.textContent = arrows ? TEXT.sideArrowsNormal : TEXT.sideClassicNormal;
+    this.sideSwapText.textContent = arrows ? TEXT.sideArrowsSwapped : TEXT.sideClassicSwapped;
+    const mark = (el: HTMLButtonElement, on: boolean) => { el.classList.toggle('selected', on); el.setAttribute('aria-checked', String(on)); };
+    mark(this.optClassic, !arrows);
+    mark(this.optArrows, arrows);
+    mark(this.optSideNormal, !c.swapSides);
+    mark(this.optSideSwap, c.swapSides);
+    // small left-to-right sketch of where each button sits
+    const pedals = [TEXT.brake, TEXT.gas];
+    let order: string[];
+    if (!arrows) order = c.swapSides ? [TEXT.gas, '', TEXT.brake] : [TEXT.brake, '', TEXT.gas];
+    else order = c.swapSides ? ['<', '>', '', ...pedals] : [...pedals, '', '<', '>'];
+    this.layoutPreview.replaceChildren(...order.map((t) => {
+      const chip = document.createElement('span');
+      chip.className = t === '' ? 'gap' : t.length === 1 ? 'chip arrow-chip' : 'chip';
+      chip.textContent = t;
+      return chip;
+    }));
   }
 
   setBest(best: number): void {

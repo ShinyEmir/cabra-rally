@@ -113,3 +113,35 @@ body {
 .tune-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tune-actions button { flex: 1 1 100px; min-height: 44px; font-family: var(--font-body); font-weight: 800; font-size: 14px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 12px; cursor: pointer; }
 .tune-row.tune-check input { grid-column: auto; width: 26px; height: 26px; }
+
+/* Control schemes: classic splits the pedals to both corners; with-arrows keeps the pedals
+   together on one side and the arrows on the other; swapped mirrors either layout. */
+.pad-group { display: flex; align-items: flex-end; gap: 12px; }
+.pads.classic .pad-group.pedals { display: contents; }
+.pads.classic .pad-group.arrows { display: none; }
+.pads.swapped { flex-direction: row-reverse; }
+.pads.with-arrows .pedal { width: clamp(88px, 18vw, 112px); }
+.arrow { pointer-events: auto; width: clamp(72px, 15vw, 96px); height: clamp(72px, 22vh, 96px); display: flex; align-items: center; justify-content: center; padding: 0; background: var(--paper); border: 3px solid var(--ink); border-radius: 22px; box-shadow: 0 6px 0 var(--ink); cursor: pointer; touch-action: none; }
+.arrow svg { width: 46%; height: 46%; fill: none; stroke: var(--ink); stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.arrow.on { transform: translateY(5px); box-shadow: 0 1px 0 var(--ink); background: var(--gold); }
+
+/* Controls screen */
+.link-btn { display: block; margin: 10px auto 0; min-height: 44px; padding: 0 18px; font-family: var(--font-display); font-size: 18px; color: var(--ink); background: transparent; border: 3px solid var(--ink); border-radius: 14px; cursor: pointer; }
+.link-btn:active { transform: translateY(2px); }
+.link-btn:focus-visible, .opt:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.setting-label { margin: 14px 0 6px; font-weight: 800; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; text-align: left; }
+.choice { display: flex; flex-wrap: wrap; gap: 8px; }
+.opt { flex: 1 1 150px; min-width: 0; min-height: 44px; padding: 8px 10px; font-family: var(--font-display); font-size: 18px; line-height: 1.1; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 14px; box-shadow: 0 4px 0 var(--ink); cursor: pointer; }
+.opt small { display: block; margin-top: 3px; font-family: var(--font-body); font-weight: 700; font-size: 12px; line-height: 1.25; }
+.opt.selected { color: #fff; background: var(--accent); text-shadow: 0 2px 0 var(--ink); }
+.opt.selected small { color: #ffe9d4; text-shadow: none; }
+.opt:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); }
+.layout-preview { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding: 8px 10px; background: rgba(31, 58, 52, 0.08); border-radius: 12px; }
+.layout-preview .chip { padding: 3px 10px; font-family: var(--font-display); font-size: 14px; color: #fff; background: var(--teal); border: 2px solid var(--ink); border-radius: 10px; }
+.layout-preview .chip.arrow-chip { color: var(--ink); background: var(--paper); }
+.layout-preview .gap { flex: 1; }
+@media (max-height: 430px) {
+  .setting-label { margin-top: 10px; }
+  .opt { font-size: 16px; }
+  #controlsHow { display: none; }
+}

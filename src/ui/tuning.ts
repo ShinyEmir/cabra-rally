@@ -1,7 +1,7 @@
 // Developer tuning panel for phase 3. Only appears when the URL has ?ajuste.
 // Sliders change PHY and CAMERA live; tried values are kept in localStorage (and only applied
 // while ?ajuste is on), and the panel lists what differs from the defaults so it can be copied.
-import { PHY } from '../core/physics';
+import { LEAN, PHY } from '../core/physics';
 import { DEFAULT_CAR_SHAPE } from '../core/vehicle';
 import { CAMERA } from '../render/camera';
 import { SHAPE_DEBUG } from '../render/draw-car';
@@ -36,6 +36,7 @@ const KNOBS: readonly Knob[] = [
   knob('PHY', PHY, 'airTorque', 'Giro en el aire: fuerza', 2, 20, 0.5),
   knob('PHY', PHY, 'airDamp', 'Giro en el aire: freno', 0.2, 4, 0.1),
   knob('PHY', PHY, 'inertia', 'Inercia al girar', 0.5, 2.5, 0.05),
+  knob('LEAN', LEAN, 'torque', 'Flechas: inclinación en el suelo', 0, 20, 0.5),
   knob('PHY', PHY, 'engine', 'Motor', 3, 12, 0.1),
   knob('PHY', PHY, 'vmax', 'Velocidad máxima', 8, 25, 0.5),
   knob('PHY', PHY, 'brake', 'Freno', 2, 10, 0.1),

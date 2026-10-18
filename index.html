@@ -23,9 +23,15 @@
 
     <div class="pops" id="pops" aria-live="polite"></div>
 
-    <div class="pads" id="pads" hidden>
-      <button class="pedal brake" id="padBrake" data-t-label="brakeLabel" tabindex="-1"><span data-t="brake"></span></button>
-      <button class="pedal gas" id="padGas" data-t-label="gasLabel" tabindex="-1"><span data-t="gas"></span></button>
+    <div class="pads classic" id="pads" hidden>
+      <div class="pad-group pedals">
+        <button class="pedal brake" id="padBrake" data-t-label="brakeLabel" tabindex="-1"><span data-t="brake"></span></button>
+        <button class="pedal gas" id="padGas" data-t-label="gasLabel" tabindex="-1"><span data-t="gas"></span></button>
+      </div>
+      <div class="pad-group arrows">
+        <button class="arrow" id="padBack" data-t-label="tiltBackLabel" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 4 7 12l8 8" /></svg></button>
+        <button class="arrow" id="padForward" data-t-label="tiltForwardLabel" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 4 8 8-8 8" /></svg></button>
+      </div>
     </div>
 
     <div class="overlay" id="menu">
@@ -37,7 +43,8 @@
           <button class="btn alt" id="btnStory" disabled><span data-t="storyMode"></span><small data-t="storyModeHint"></small></button>
         </div>
         <p class="best" id="bestLine" hidden></p>
-        <p class="how" data-t="howTo"></p>
+        <button class="link-btn" id="btnControls" data-t="controls"></button>
+        <p class="how" id="howTo"></p>
         <p class="rotate" data-t="rotateHint"></p>
       </div>
     </div>
@@ -65,6 +72,28 @@
         <div class="modes spaced">
           <button class="btn" id="btnResume" data-t="resume"></button>
           <button class="btn ghost" id="btnQuit" data-t="quit"></button>
+        </div>
+        <button class="link-btn" id="btnPauseControls" data-t="controls"></button>
+      </div>
+    </div>
+
+    <div class="overlay" id="controlsView" hidden>
+      <div class="card">
+        <h2 data-t="controls"></h2>
+        <p class="setting-label" data-t="schemeLabel"></p>
+        <div class="choice" role="radiogroup">
+          <button class="opt" id="optClassic" role="radio"><span data-t="schemeClassic"></span><small data-t="schemeClassicHint"></small></button>
+          <button class="opt" id="optArrows" role="radio"><span data-t="schemeArrows"></span><small data-t="schemeArrowsHint"></small></button>
+        </div>
+        <p class="setting-label" data-t="sideLabel"></p>
+        <div class="choice" role="radiogroup">
+          <button class="opt" id="optSideNormal" role="radio"><span id="sideNormalText"></span></button>
+          <button class="opt" id="optSideSwap" role="radio"><span id="sideSwapText"></span></button>
+        </div>
+        <div class="layout-preview" id="layoutPreview" aria-hidden="true"></div>
+        <p class="how" id="controlsHow"></p>
+        <div class="modes spaced">
+          <button class="btn" id="btnControlsDone" data-t="done"></button>
         </div>
       </div>
     </div>

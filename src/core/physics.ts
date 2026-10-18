@@ -16,6 +16,11 @@ export const PHY = {
   dt: 1 / 240,
 };
 
+/** Ground tilt from the arrows control scheme. Not in the prototype, so not part of PHY. */
+export const LEAN = {
+  torque: 9,
+};
+
 export interface Wheel {
   /** In contact with the ground. */
   c: boolean;
@@ -71,8 +76,14 @@ function circleDepth(cx: number, cy: number, r: number, inv: number, td: Readonl
  * Returns true if a crash zone (the driver's head first) hits the ground or the car stays
  * upside down. With noCrash the crash checks are skipped (used after a crash, while the car
  * keeps rolling). shape adds chassis contact and per-character crash zones.
+ * spin turns the car in the air (the prototype uses thr for it); lean tilts it while on the
+ * ground. Both are in [-1, 1], positive nose up; the arrows control scheme sets them apart.
  */
-export function stepCar(car: Car, thr: number, dt: number, noCrash: boolean, td: Readonly<TerrainConfig> = DEFAULT_TERRAIN, shape: Readonly<CarShape> = PROTOTYPE_SHAPE): boolean {
+export function stepCar(
+  car: Car, thr: number, dt: number, noCrash: boolean,
+  td: Readonly<TerrainConfig> = DEFAULT_TERRAIN, shape: Readonly<CarShape> = PROTOTYPE_SHAPE,
+  spin = thr, lean = 0,
+): boolean {
   let ca = Math.cos(car.a), sa = Math.sin(car.a);
   let fx = 0, fy = -PHY.g, tq = 0, contacts = 0;
   const vf = car.vx * ca + car.vy * sa;
@@ -129,8 +140,13 @@ export function stepCar(car: Car, thr: number, dt: number, noCrash: boolean, td:
       tq += rx * Fy - ry * Fx;
     }
   }
-  if (contacts === 0) { tq += PHY.airTorque * thr - car.w * PHY.airDamp; car.air += dt; }
-  else { tq -= car.w * 0.5; car.air = 0; }
+  if (contacts === 0) { tq += PHY.airTorque * spin - car.w * PHY.airDamp; car.air += dt; }
+  else {
+    tq -= car.w * 0.5;
+    // skipped when 0 so the prototype path stays bit for bit identical
+    if (lean !== 0) tq += LEAN.torque * lean;
+    car.air = 0;
+  }
   fx -= car.vx * 0.02;
   car.vx += fx * dt; car.vy += fy * dt; car.w += tq / PHY.inertia * dt;
   car.x += car.vx * dt; car.y += car.vy * dt; car.a += car.w * dt;

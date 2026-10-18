@@ -37,6 +37,21 @@ export interface Run {
   wheelRot: [number, number];
 }
 
+/** Player input for one frame. Each value is in [-1, 1]. */
+export interface DriveInput {
+  /** Gas positive, brake or reverse negative. */
+  thr: number;
+  /** Turning in the air, nose up positive. */
+  spin: number;
+  /** Tilting on the ground, nose up positive. */
+  lean: number;
+}
+
+/** The classic two-pedal input: the pedals also turn the car in the air, as in the prototype. */
+export function pedalsOnly(thr: number): DriveInput {
+  return { thr, spin: thr, lean: 0 };
+}
+
 export interface FrameEvents {
   score: ScoreEvent[];
   coins: Coin[];
@@ -61,23 +76,26 @@ export function distance(run: Run): number {
   return Math.max(0, Math.floor(run.car.x - run.startX));
 }
 
-function stepOnce(run: Run, thr: number, ev: FrameEvents): void {
+function stepOnce(run: Run, input: DriveInput, ev: FrameEvents): void {
   const car = run.car;
   const playing = run.phase === 'play';
-  const crashed = stepCar(car, playing ? thr : 0, PHY.dt, !playing, run.mode.terrain, run.shape);
+  const crashed = playing
+    ? stepCar(car, input.thr, PHY.dt, false, run.mode.terrain, run.shape, input.spin, input.lean)
+    : stepCar(car, 0, PHY.dt, true, run.mode.terrain, run.shape);
   const vf = car.vx * Math.cos(car.a) + car.vy * Math.sin(car.a);
   run.wheelRot[0] += vf / PHY.r * PHY.dt;
   run.wheelRot[1] += vf / PHY.r * PHY.dt;
   if (crashed && playing) { run.phase = 'crash'; run.crashT = 0; ev.crashed = true; }
 }
 
-/** Advances the run by one rendered frame of length dt with throttle thr in [-1, 1]. */
-export function updateRun(run: Run, dt: number, thr: number): FrameEvents {
+/** Advances the run by one rendered frame of length dt. A number is the classic pedal throttle. */
+export function updateRun(run: Run, dt: number, input: DriveInput | number): FrameEvents {
+  const drive = typeof input === 'number' ? pedalsOnly(input) : input;
   const ev: FrameEvents = { score: [], coins: [], crashed: false, finished: false };
   if (run.phase === 'over') return ev;
   run.acc += dt;
   let n = 0;
-  while (run.acc >= PHY.dt && n < RUN.maxStepsPerFrame) { stepOnce(run, thr, ev); run.acc -= PHY.dt; n++; }
+  while (run.acc >= PHY.dt && n < RUN.maxStepsPerFrame) { stepOnce(run, drive, ev); run.acc -= PHY.dt; n++; }
   if (run.acc > PHY.dt) run.acc = 0;
   if (run.phase === 'play') {
     const car = run.car;

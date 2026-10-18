@@ -6,7 +6,7 @@ Cabra Rally (nombre provisional) es un juego 2D de carrito por colinas con perso
 
 ## Resumen y decisiones
 
-El juego se maneja con dos botones (gas y freno). El puntaje sube con volteretas en el aire, tiempo en el aire y caballitos. Hay dos modos: libre (infinito, solo puntos) e historia (recoger amigos en el camino y llevarlos al estadio).
+El juego se maneja con dos botones (gas y freno) por omisión, y cada jugador puede cambiar a pedales con flechas desde la pantalla de Controles. El puntaje sube con volteretas en el aire, tiempo en el aire y caballitos. Hay dos modos: libre (infinito, solo puntos) e historia (recoger amigos en el camino y llevarlos al estadio).
 
 Decisiones ya tomadas por Emir:
 
@@ -255,14 +255,35 @@ El juego se diseña para teléfono en horizontal. Un pulgar sobre cada pedal, si
 
 | Entrada | Acción |
 | --- | --- |
+Los controles se configuran en la pantalla **Controles** (desde el menú y desde la pausa) y la elección se guarda en el teléfono (, clave ). Hay dos esquemas y un interruptor de lados; agregar más opciones es agregar datos en .
+
+**Esquema clásico (por omisión, igual al prototipo):**
+
+| Entrada | Acción |
+| --- | --- |
 | Pedal derecho (GAS) | Acelera en el suelo. En el aire, gira hacia atrás |
 | Pedal izquierdo (FRENO) | Frena o va en reversa. En el aire, gira hacia adelante |
 | Teclado: flecha derecha, D, flecha arriba, espacio | Gas |
 | Teclado: flecha izquierda, A, flecha abajo | Freno |
+
+**Esquema pedales y flechas** (propuesto por Emir el 2026-10-18): gas y freno solo avanzan y frenan; dos flechas inclinan el carro. En el aire la flecha hace girar con ; en el suelo inclina con  = 9 (por debajo de unos 8 no alcanza a levantar la rueda delantera; con 9 un toque de medio segundo con gas levanta un caballito controlable y mantenerla unos 2 s voltea el carro).
+
+| Entrada | Acción |
+| --- | --- |
+| GAS / FRENO (juntos en un lado) | Acelerar / frenar o reversa, sin girar |
+| Flecha izquierda | Inclina hacia atrás (nariz arriba) |
+| Flecha derecha | Inclina hacia adelante (nariz abajo) |
+| Teclado: flecha arriba, W, espacio / flecha abajo, S | Gas / freno |
+| Teclado: flecha izquierda, A / flecha derecha, D | Inclinar atrás / adelante |
+
+**Lados:** en clásico, freno a la izquierda o gas a la izquierda; con flechas, pedales a la izquierda o flechas a la izquierda. Cambiar de lado solo mueve botones, nunca cambia lo que hacen.
+
+| Siempre | Acción |
+| --- | --- |
 | R | Reiniciar la partida |
 | Esc o P | Pausa |
 
-Los pedales usan `pointerdown`, `pointerup`, `pointercancel` y captura del puntero, para que dos dedos funcionen a la vez y soltar fuera del botón no deje el pedal pegado. Se bloquea el menú contextual, la selección de texto y el zoom por doble toque. Si la ventana pierde el foco, el juego se pausa y se sueltan ambos pedales.
+Los pedales usan `pointerdown`, `pointerup`, `pointercancel` y captura del puntero, para que dos dedos funcionen a la vez y soltar fuera del botón no deje el pedal pegado. Se bloquea el menú contextual, la selección de texto y el zoom por doble toque. Si la ventana pierde el foco, el juego se pausa y se sueltan todos los botones. Las flechas miden al menos 72 px.
 
 ### Pantallas
 

@@ -1,28 +1,26 @@
-// Touch pedals with pointer events. Each pedal tracks its own pointers, so two thumbs work at once,
-// and pointer capture makes sure lifting a finger outside the button still releases it.
+// Touch buttons (pedals and arrows) with pointer events. Each button tracks its own pointers, so
+// several thumbs work at once, and pointer capture makes sure lifting a finger outside the
+// button still releases it.
+import type { HeldControls } from './scheme';
 
-export interface PedalState {
-  gas: boolean;
-  brake: boolean;
-  /** Releases both pedals, for example when the window loses focus. */
+export interface TouchState {
+  readonly held: Readonly<HeldControls>;
+  /** Releases every button, for example when the window loses focus. */
   release(): void;
 }
 
-type PedalName = 'gas' | 'brake';
+export type TouchButtons = Record<keyof HeldControls, HTMLElement>;
 
-export function createPedals(gasEl: HTMLElement, brakeEl: HTMLElement): PedalState {
+export function createTouchControls(buttons: TouchButtons): TouchState {
+  const held: HeldControls = { gas: false, brake: false, tiltBack: false, tiltForward: false };
   const releasers: Array<() => void> = [];
-  const state: PedalState = {
-    gas: false,
-    brake: false,
-    release() { for (const r of releasers) r(); },
-  };
 
-  function bind(el: HTMLElement, name: PedalName): void {
+  for (const name of Object.keys(buttons) as Array<keyof HeldControls>) {
+    const el = buttons[name];
     const active = new Set<number>();
     const sync = () => {
       const on = active.size > 0;
-      state[name] = on;
+      held[name] = on;
       el.classList.toggle('on', on);
     };
     el.addEventListener('pointerdown', (e) => {
@@ -39,7 +37,5 @@ export function createPedals(gasEl: HTMLElement, brakeEl: HTMLElement): PedalSta
     releasers.push(() => { active.clear(); sync(); });
   }
 
-  bind(gasEl, 'gas');
-  bind(brakeEl, 'brake');
-  return state;
+  return { held, release() { for (const r of releasers) r(); } };
 }

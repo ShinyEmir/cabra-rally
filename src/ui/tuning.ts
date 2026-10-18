@@ -2,7 +2,9 @@
 // Sliders change PHY and CAMERA live; tried values are kept in localStorage (and only applied
 // while ?ajuste is on), and the panel lists what differs from the defaults so it can be copied.
 import { PHY } from '../core/physics';
+import { DEFAULT_CAR_SHAPE } from '../core/vehicle';
 import { CAMERA } from '../render/camera';
+import { SHAPE_DEBUG } from '../render/draw-car';
 
 const TUNING = {
   queryFlag: 'ajuste',
@@ -20,9 +22,10 @@ interface Knob {
   set(v: number): void;
 }
 
-function knob<K extends string>(obj: Record<K, number>, field: K, label: string, min: number, max: number, step: number): Knob {
+/** group keeps ids unique across objects, for example PHY.k and the chassis k. */
+function knob<K extends string>(group: string, obj: Record<K, number>, field: K, label: string, min: number, max: number, step: number): Knob {
   return {
-    id: field, label, min, max, step, def: obj[field],
+    id: group + '.' + field, label, min, max, step, def: obj[field],
     get: () => obj[field],
     set: (v) => { obj[field] = v; },
   };
@@ -30,16 +33,20 @@ function knob<K extends string>(obj: Record<K, number>, field: K, label: string,
 
 // Panel labels are a developer tool, kept here instead of strings.ts.
 const KNOBS: readonly Knob[] = [
-  knob(PHY, 'airTorque', 'Giro en el aire: fuerza', 2, 20, 0.5),
-  knob(PHY, 'airDamp', 'Giro en el aire: freno', 0.2, 4, 0.1),
-  knob(PHY, 'inertia', 'Inercia al girar', 0.5, 2.5, 0.05),
-  knob(PHY, 'engine', 'Motor', 3, 12, 0.1),
-  knob(PHY, 'vmax', 'Velocidad máxima', 8, 25, 0.5),
-  knob(PHY, 'brake', 'Freno', 2, 10, 0.1),
-  knob(PHY, 'mu', 'Agarre', 0.5, 2, 0.05),
-  knob(PHY, 'k', 'Suspensión: rigidez', 80, 300, 5),
-  knob(PHY, 'c', 'Suspensión: amortiguación', 4, 25, 0.5),
-  knob(CAMERA, 'zoom', 'Cámara: alejar (1 = original)', 0.7, 1.8, 0.05),
+  knob('PHY', PHY, 'airTorque', 'Giro en el aire: fuerza', 2, 20, 0.5),
+  knob('PHY', PHY, 'airDamp', 'Giro en el aire: freno', 0.2, 4, 0.1),
+  knob('PHY', PHY, 'inertia', 'Inercia al girar', 0.5, 2.5, 0.05),
+  knob('PHY', PHY, 'engine', 'Motor', 3, 12, 0.1),
+  knob('PHY', PHY, 'vmax', 'Velocidad máxima', 8, 25, 0.5),
+  knob('PHY', PHY, 'brake', 'Freno', 2, 10, 0.1),
+  knob('PHY', PHY, 'mu', 'Agarre', 0.5, 2, 0.05),
+  knob('PHY', PHY, 'k', 'Suspensión: rigidez', 80, 300, 5),
+  knob('PHY', PHY, 'c', 'Suspensión: amortiguación', 4, 25, 0.5),
+  knob('head', DEFAULT_CAR_SHAPE.head, 'r', 'Cabeza: tamaño (zona de choque)', 0.15, 0.45, 0.01),
+  knob('body', DEFAULT_CAR_SHAPE.body, 'k', 'Carrocería: dureza contra el suelo', 200, 2000, 50),
+  knob('body', DEFAULT_CAR_SHAPE.body, 'c', 'Carrocería: amortiguación', 5, 80, 1),
+  knob('body', DEFAULT_CAR_SHAPE.body, 'mu', 'Carrocería: fricción al raspar', 0, 1.5, 0.05),
+  knob('CAMERA', CAMERA, 'zoom', 'Cámara: alejar (1 = original)', 0.7, 1.8, 0.05),
 ];
 
 function changed(): Record<string, number> {
@@ -119,6 +126,17 @@ export function setupTuning(hooks: TuningHooks): void {
     row.append(name, value, input);
     panel.appendChild(row);
   }
+
+  const showRow = document.createElement('label');
+  showRow.className = 'tune-row tune-check';
+  const showBox = document.createElement('input');
+  showBox.type = 'checkbox';
+  showBox.checked = SHAPE_DEBUG.visible;
+  showBox.addEventListener('change', () => { SHAPE_DEBUG.visible = showBox.checked; });
+  const showText = document.createElement('span');
+  showText.textContent = 'Ver zonas de choque (rojo) y carrocería (azul)';
+  showRow.append(showText, showBox);
+  panel.insertBefore(showRow, panel.firstChild);
 
   const actions = document.createElement('div');
   actions.className = 'tune-actions';

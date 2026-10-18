@@ -144,7 +144,7 @@ Tras un choque el carro sigue simulándose 0.9 s sin control y luego aparece la 
 | --- | --- | --- |
 | `g` | 9.8 | Gravedad |
 | `k` | 150 | Rigidez de la suspensión |
-| `c` | 11 | Amortiguación de la suspensión |
+| `c` | 16 (prototipo: 11) | Amortiguación de la suspensión |
 | `maxTravel` | 0.5 | Recorrido máximo antes del tope duro |
 | `r` | 0.4 | Radio de rueda |
 | `s0` | 0.35 | Longitud libre de la suspensión |
@@ -155,7 +155,7 @@ Tras un choque el carro sigue simulándose 0.9 s sin control y luego aparece la 
 | `vmax`, `vrev` | 15, 5 | Velocidad máxima adelante y en reversa |
 | `mu` | 1.25 | Coeficiente de adherencia |
 | `inertia` | 1.1 | Resistencia al giro |
-| `airTorque` | 8 (prototipo: 11) | Fuerza de giro en el aire |
+| `airTorque` | 9 (prototipo: 11) | Fuerza de giro en el aire |
 | `airDamp` | 1.0 | Frenado del giro en el aire |
 | `headX`, `headY`, `headR` | 0.15, 0.82, 0.3 | Cabeza del conductor |
 | `dt` | 1/240 | Paso fijo de simulación |
@@ -169,13 +169,16 @@ Medido en la fase 1 con los valores actuales: con gas sostenido desde la salida,
 | Fecha | Parámetro | Antes | Después | Motivo y efecto medido en la primera rampa (1.5 s de aire) |
 | --- | --- | --- | --- | --- |
 | 2026-10-17 | `airTorque` | 11 | 8 | Emir sintió los giros raros. Con gas sostenido pasa de 471° y choque a 342° (una voltereta) y aterriza; con freno, de 406° a 303°; sin pedal no cambia (30°). |
+| 2026-10-18 | `c` | 11 | 16 | Emir sintió que rebota mucho al aterrizar. En partidas simuladas los rebotes tras aterrizar bajan de 4 de 17 (hasta 0.42 s en el aire otra vez) a 0 o 1. También baja el empujón de giro al pasar el borde de la rampa (sin pedal, de 30° a 20°). |
+| 2026-10-18 | `airTorque` | 8 | 9 | Compensa el cambio de `c`: con gas sostenido la primera rampa vuelve a dar una voltereta y aterriza (344°, antes 342°). |
+| 2026-10-18 | Contacto de carrocería (nuevo) | sin contacto | 5 círculos, dureza 800, amortiguación 34, fricción 0.5 | La carrocería se metía hasta 1.5 m en el suelo al aterrizar de nariz o de cola y al pegar contra la bajada de una rampa. Ahora raspa: el hundimiento queda por debajo de 0.3 m. Vive en `DEFAULT_CAR_SHAPE` (`src/core/vehicle.ts`), no en `PHY`. |
 
 Las pruebas de paridad copian estos valores al código del prototipo antes de comparar, y una prueba exige que la lista `TUNED` de `tests/parity.test.ts` coincida con esta tabla.
 
 **Pendientes de ajuste** (anotados por Emir el 2026-10-18; la fase 3 sigue abierta y se ajusta con el tiempo):
 
-- **Rebote al aterrizar:** se siente que el carro rebota mucho al tocar el suelo. Las perillas son la suspensión: `c` (amortiguación, sube para rebotar menos) y `k` (rigidez). Ambas están en el panel `?ajuste`. Puede cambiar al maniobrar mejor en el aire, así que se revisa con más pruebas.
-- **Hitbox:** revisar la zona de choque, que hoy es la cabeza del conductor (círculo de radio `headR` en `headX, headY`) más la regla de boca abajo y detenido. Se ajusta junto con el carro y los personajes nuevos, porque su forma cambia la sensación.
+- **Rebote al aterrizar:** atendido el 2026-10-18 (`c` de 11 a 16 y contacto de carrocería). Falta que Emir lo confirme en el teléfono.
+- **Hitbox:** desde el 2026-10-18 es un dato por personaje (`CarShape` en `src/core/vehicle.ts`): la cabeza del conductor (se dibuja y choca en el mismo círculo), zonas de choque extra (orejas, sombreros) y los círculos de la carrocería que raspan sin chocar. La regla de boca abajo y detenido sigue igual. En el panel `?ajuste` se pueden ver las zonas y cambiar el tamaño de la cabeza. En la fase 5 cada `AnimalSpec` trae su propia forma.
 - **Cámara:** sin quejas hasta ahora; falta confirmarla con calma (perilla "Cámara: alejar" del panel).
 
 **Pruebas automáticas que debe cumplir `physics.test.ts`:**

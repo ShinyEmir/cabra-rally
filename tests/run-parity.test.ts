@@ -3,7 +3,7 @@
 // car state and game state match exactly on every frame.
 import { describe, expect, it } from 'vitest';
 import { FREE_MODE } from '../src/core/modes';
-import { PHY } from '../src/core/physics';
+import { PHY, PROTOTYPE_SHAPE } from '../src/core/physics';
 import { createRun, updateRun } from '../src/core/run';
 import { describeScore, TEXT } from '../src/ui/strings';
 import { holdGas, jittery, leveler, mixed, type Driver } from './drivers';
@@ -35,7 +35,7 @@ describe('game parity with reference/prototype.html (free mode)', () => {
       // compare the code with the same tuned numbers on both sides
       Object.assign(proto.PHY, PHY);
       proto.startGame('free');
-      const run = createRun(FREE_MODE, 'play', proto.G.acc);
+      const run = createRun(FREE_MODE, 'play', proto.G.acc, PROTOTYPE_SHAPE);
       const ours: ProtoPop[] = [];
       let frames = 0;
       for (let f = 0; f < MAX_FRAMES && proto.G.state !== 'over'; f++) {

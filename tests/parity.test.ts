@@ -12,7 +12,8 @@ import { loadPrototypePhysics } from './prototype';
  * Update this together with the parameter table in docs/PLAN.md.
  */
 const TUNED: Record<string, [number, number]> = {
-  airTorque: [11, 8],
+  c: [11, 16],
+  airTorque: [11, 9],
 };
 
 describe('tuned physics parameters', () => {

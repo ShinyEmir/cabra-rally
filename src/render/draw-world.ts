@@ -111,7 +111,7 @@ export function drawWorld(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camer
     if (c.got || c.x < x0 || c.x > x1) continue;
     drawCoin(ctx, c, t);
   }
-  drawCar(ctx, run.car, run.wheelRot);
+  drawCar(ctx, run.car, run.wheelRot, run.shape);
   drawParticles(ctx, parts);
 }
 

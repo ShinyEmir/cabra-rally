@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { newCar, PHY, stepCar, type Car } from '../src/core/physics';
 import { hash01 } from '../src/core/rng';
-import { DEFAULT_TERRAIN, type TerrainConfig } from '../src/core/terrain';
+import { DEFAULT_TERRAIN, terrain, type TerrainConfig } from '../src/core/terrain';
+import { DEFAULT_CAR_SHAPE, type CarShape } from '../src/core/vehicle';
+import { leveler } from './drivers';
 
 const STEPS_PER_SECOND = Math.round(1 / PHY.dt);
 const FLAT: TerrainConfig = { amp: 0, kick: 0, kickH: 1, flatFrom: 1e9 };
@@ -61,6 +63,18 @@ describe('physics', () => {
     }
   });
 
+  it('stays finite for 60 s with the game shape (chassis contact)', () => {
+    for (let seed = 0; seed < 8; seed++) {
+      const car = newCar(0);
+      let thr = 0;
+      for (let i = 0; i < 60 * STEPS_PER_SECOND; i++) {
+        if (i % 60 === 0) thr = Math.floor(hash01(seed * 1000 + i / 60) * 3) - 1;
+        stepCar(car, thr, PHY.dt, true, DEFAULT_TERRAIN, DEFAULT_CAR_SHAPE);
+        if (!allFinite(car)) throw new Error(`non-finite state at step ${i}, seed ${seed}`);
+      }
+    }
+  });
+
   it('gives more than 1 s of air on a free mode ramp with gas held', () => {
     const car = newCar(0);
     let maxAir = 0;
@@ -71,5 +85,62 @@ describe('physics', () => {
       if (crashed) break;
     }
     expect(maxAir).toBeGreaterThan(1);
+  });
+});
+
+describe('car shape (hitbox and chassis)', () => {
+  function shapeWith(over: Partial<CarShape>): CarShape {
+    return { ...DEFAULT_CAR_SHAPE, ...over };
+  }
+
+  it('rests at the same height as the prototype: the chassis does not touch flat ground', () => {
+    const car = newCar(0);
+    for (let i = 0; i < 3 * STEPS_PER_SECOND; i++) stepCar(car, 0, PHY.dt, false, DEFAULT_TERRAIN, DEFAULT_CAR_SHAPE);
+    expect(car.y).toBeCloseTo(0.9173, 3);
+  });
+
+  it('crashes from any crash zone given as data, not only the head', () => {
+    const resting = () => {
+      const car = newCar(0);
+      for (let i = 0; i < STEPS_PER_SECOND; i++) stepCar(car, 0, PHY.dt, true, DEFAULT_TERRAIN, DEFAULT_CAR_SHAPE);
+      return car;
+    };
+    // a zone hanging below the chassis touches the ground at once
+    const low = shapeWith({ extraCrash: [{ x: 0, y: -1, r: 0.1 }] });
+    expect(stepCar(resting(), 0, PHY.dt, false, DEFAULT_TERRAIN, low)).toBe(true);
+    // a head placed low enough also crashes, so each character can move it
+    const lowHead = shapeWith({ head: { x: 0, y: -0.9, r: 0.2 } });
+    expect(stepCar(resting(), 0, PHY.dt, false, DEFAULT_TERRAIN, lowHead)).toBe(true);
+    expect(stepCar(resting(), 0, PHY.dt, false, DEFAULT_TERRAIN, DEFAULT_CAR_SHAPE)).toBe(false);
+  });
+
+  it('keeps the chassis from sinking into the ground on landings', () => {
+    const car = newCar(0);
+    const drive = leveler(0.1);
+    let deepest = 0;
+    for (let i = 0; i < 60 * STEPS_PER_SECOND; i++) {
+      if (stepCar(car, drive(i, car), PHY.dt, false, DEFAULT_TERRAIN, DEFAULT_CAR_SHAPE)) break;
+      const ca = Math.cos(car.a), sa = Math.sin(car.a);
+      for (const p of DEFAULT_CAR_SHAPE.body.points) {
+        const px = car.x + p.x * ca - p.y * sa, py = car.y + p.x * sa + p.y * ca - p.r;
+        deepest = Math.max(deepest, terrain(px) - py);
+      }
+    }
+    // the prototype, with no chassis contact, sinks up to 1.5 m here
+    expect(deepest).toBeLessThan(0.3);
+  });
+
+  it('does one backflip and lands on the first ramp with gas held', () => {
+    const car = newCar(0);
+    let a0 = 0, inAir = false, maxRot = 0;
+    for (let i = 0; i < 30 * STEPS_PER_SECOND; i++) {
+      const crashed = stepCar(car, 1, PHY.dt, false, DEFAULT_TERRAIN, DEFAULT_CAR_SHAPE);
+      expect(crashed).toBe(false);
+      if (car.x > 50 && car.air > 0 && !inAir) { inAir = true; a0 = car.a; }
+      if (inAir) maxRot = Math.max(maxRot, car.a - a0);
+      if (inAir && car.air === 0 && maxRot > 1) break;
+    }
+    expect(maxRot / (2 * Math.PI)).toBeGreaterThan(0.9);
+    expect(maxRot / (2 * Math.PI)).toBeLessThan(1.1);
   });
 });

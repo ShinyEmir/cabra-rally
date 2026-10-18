@@ -112,3 +112,4 @@ body {
 .tune-summary { margin: 10px 0 8px; padding: 8px; background: #fff; border: 2px solid var(--ink); border-radius: 10px; font-size: 12px; white-space: pre-wrap; user-select: text; -webkit-user-select: text; }
 .tune-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .tune-actions button { flex: 1 1 100px; min-height: 44px; font-family: var(--font-body); font-weight: 800; font-size: 14px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 12px; cursor: pointer; }
+.tune-row.tune-check input { grid-column: auto; width: 26px; height: 26px; }

@@ -4,6 +4,7 @@ import { collectCoins, createCoinField, generateCoins, type Coin, type CoinField
 import type { ModeSpec } from './modes';
 import { newCar, PHY, stepCar, type Car } from './physics';
 import { createScoring, updateScoring, type ScoreEvent, type ScoringState } from './scoring';
+import { DEFAULT_CAR_SHAPE, type CarShape } from './vehicle';
 
 export const RUN = {
   /** Physics steps per frame are capped so slow devices fall behind instead of freezing. */
@@ -20,6 +21,8 @@ export type RunPhase = 'idle' | 'play' | 'crash' | 'over';
 
 export interface Run {
   mode: Readonly<ModeSpec>;
+  /** Collision shape of the car and driver in this run. */
+  shape: Readonly<CarShape>;
   phase: RunPhase;
   car: Car;
   startX: number;
@@ -44,12 +47,12 @@ export interface FrameEvents {
 }
 
 /** acc carries leftover frame time from the previous run, as the prototype does. */
-export function createRun(mode: Readonly<ModeSpec>, phase: 'idle' | 'play', acc = 0): Run {
+export function createRun(mode: Readonly<ModeSpec>, phase: 'idle' | 'play', acc = 0, shape: Readonly<CarShape> = DEFAULT_CAR_SHAPE): Run {
   const car = newCar(0, mode.terrain);
   const field = createCoinField();
   if (phase === 'play') generateCoins(field, mode.initialCoinsUpTo, mode.terrain);
   return {
-    mode, phase, car, startX: car.x, score: 0, coins: 0, field,
+    mode, shape, phase, car, startX: car.x, score: 0, coins: 0, field,
     scoring: createScoring(), crashT: 0, acc, wheelRot: [0, 0],
   };
 }
@@ -61,7 +64,7 @@ export function distance(run: Run): number {
 function stepOnce(run: Run, thr: number, ev: FrameEvents): void {
   const car = run.car;
   const playing = run.phase === 'play';
-  const crashed = stepCar(car, playing ? thr : 0, PHY.dt, !playing, run.mode.terrain);
+  const crashed = stepCar(car, playing ? thr : 0, PHY.dt, !playing, run.mode.terrain, run.shape);
   const vf = car.vx * Math.cos(car.a) + car.vy * Math.sin(car.a);
   run.wheelRot[0] += vf / PHY.r * PHY.dt;
   run.wheelRot[1] += vf / PHY.r * PHY.dt;

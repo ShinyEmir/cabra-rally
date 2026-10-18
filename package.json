@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:phone": "vite --host",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "compare": "vitest run tests/parity.test.ts"
+    "compare": "vitest run tests/parity.test.ts tests/run-parity.test.ts"
   },
   "devDependencies": {
     "typescript": "^7.0.2",

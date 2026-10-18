@@ -1,24 +1,10 @@
 // Runs the prototype's own physics code next to the TypeScript port and checks that both
 // produce exactly the same state on every step for the same inputs.
 import { describe, expect, it } from 'vitest';
-import prototypeHtml from '../reference/prototype.html?raw';
 import { newCar, PHY, stepCar, type Car } from '../src/core/physics';
 import { hash01 } from '../src/core/rng';
 import type { TerrainConfig } from '../src/core/terrain';
-
-interface PrototypePhysics {
-  TD: TerrainConfig;
-  newCar(x: number): Car;
-  stepCar(car: Car, thr: number, dt: number, noCrash: boolean): boolean;
-}
-
-function loadPrototype(): PrototypePhysics {
-  const start = prototypeHtml.indexOf('// PHYSICS-START');
-  const end = prototypeHtml.indexOf('// PHYSICS-END');
-  if (start < 0 || end < 0) throw new Error('physics markers not found in prototype.html');
-  const code = prototypeHtml.slice(start, end);
-  return new Function(`'use strict';\n${code}\nreturn { TD: TD, newCar: newCar, stepCar: stepCar };`)() as PrototypePhysics;
-}
+import { loadPrototypePhysics } from './prototype';
 
 type Input = (step: number) => number;
 
@@ -54,8 +40,8 @@ function snapshot(car: Car): number[] {
     car.wheels[0].ext, +car.wheels[0].c, car.wheels[1].ext, +car.wheels[1].c];
 }
 
-describe('parity with reference/prototype.html', () => {
-  const proto = loadPrototype();
+describe('physics parity with reference/prototype.html', () => {
+  const proto = loadPrototypePhysics();
 
   for (const sc of SCENARIOS) {
     it(`matches the prototype for 60 s: ${sc.name}`, () => {

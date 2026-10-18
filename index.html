@@ -3,9 +3,72 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#7fcfd0" />
     <title>Cabra Rally</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" />
   </head>
   <body>
+    <canvas id="world" data-t-label="canvasLabel"></canvas>
+
+    <div class="hud" id="hud" hidden>
+      <div class="hud-left">
+        <span class="label stroke" data-t="scoreLabel"></span>
+        <div id="score" class="stroke">0</div>
+        <div class="meta stroke"><span id="dist">0 m</span><span id="coins">0 monedas</span></div>
+      </div>
+      <button class="pause" id="btnPause" data-t-label="pause" tabindex="-1"><i></i><i></i></button>
+    </div>
+
+    <div class="pops" id="pops" aria-live="polite"></div>
+
+    <div class="pads" id="pads" hidden>
+      <button class="pedal brake" id="padBrake" data-t-label="brakeLabel" tabindex="-1"><span data-t="brake"></span></button>
+      <button class="pedal gas" id="padGas" data-t-label="gasLabel" tabindex="-1"><span data-t="gas"></span></button>
+    </div>
+
+    <div class="overlay" id="menu">
+      <div class="card">
+        <h1 data-t="title"></h1>
+        <p class="tagline" data-t="tagline"></p>
+        <div class="modes">
+          <button class="btn" id="btnFree"><span data-t="freeMode"></span><small data-t="freeModeHint"></small></button>
+          <button class="btn alt" id="btnStory" disabled><span data-t="storyMode"></span><small data-t="storyModeHint"></small></button>
+        </div>
+        <p class="best" id="bestLine" hidden></p>
+        <p class="how" data-t="howTo"></p>
+        <p class="rotate" data-t="rotateHint"></p>
+      </div>
+    </div>
+
+    <div class="overlay" id="over" hidden>
+      <div class="card">
+        <h2 id="overTitle"></h2>
+        <div class="big" id="overScore">0</div>
+        <div class="label" data-t="pointsLabel"></div>
+        <div class="rows">
+          <span><small data-t="distanceLabel"></small><b id="overDist">0 m</b></span>
+          <span><small data-t="coinsLabel"></small><b id="overCoins">0</b></span>
+        </div>
+        <div id="newBest" class="newbest" data-t="newBest" hidden></div>
+        <div class="modes">
+          <button class="btn" id="btnRetry" data-t="retry"></button>
+          <button class="btn ghost" id="btnMenu" data-t="menu"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="pauseView" hidden>
+      <div class="card">
+        <h2 data-t="pause"></h2>
+        <div class="modes spaced">
+          <button class="btn" id="btnResume" data-t="resume"></button>
+          <button class="btn ghost" id="btnQuit" data-t="quit"></button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

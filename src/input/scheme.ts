@@ -8,13 +8,37 @@ import { pedalsOnly, type DriveInput } from '../core/run';
  */
 export type ControlScheme = 'classic' | 'arrows';
 
+export type ButtonSize = 'small' | 'medium' | 'large';
+
 export interface ControlSettings {
   scheme: ControlScheme;
   /** Mirror the layout: in classic, gas on the left; in arrows, the arrows on the left. */
   swapSides: boolean;
+  /** large is the original size; medium is the default since 2026-10-18. */
+  size: ButtonSize;
+  /** Opacity of the touch buttons while not pressed, from OPACITY.min to 1. */
+  opacity: number;
 }
 
-export const DEFAULT_CONTROLS: Readonly<ControlSettings> = { scheme: 'classic', swapSides: false };
+export const OPACITY = { min: 0.3, max: 1, step: 0.05 } as const;
+
+export const DEFAULT_CONTROLS: Readonly<ControlSettings> = { scheme: 'classic', swapSides: false, size: 'medium', opacity: 0.65 };
+
+const SIZES: readonly ButtonSize[] = ['small', 'medium', 'large'];
+
+/** Turns whatever was saved (possibly old or broken) into valid settings. */
+export function sanitizeControls(raw: unknown): ControlSettings {
+  const saved = (typeof raw === 'object' && raw !== null ? raw : {}) as Partial<Record<keyof ControlSettings, unknown>>;
+  const opacity = typeof saved.opacity === 'number' && Number.isFinite(saved.opacity)
+    ? Math.min(OPACITY.max, Math.max(OPACITY.min, saved.opacity))
+    : DEFAULT_CONTROLS.opacity;
+  return {
+    scheme: saved.scheme === 'arrows' ? 'arrows' : 'classic',
+    swapSides: saved.swapSides === true,
+    size: SIZES.includes(saved.size as ButtonSize) ? saved.size as ButtonSize : DEFAULT_CONTROLS.size,
+    opacity,
+  };
+}
 
 /** What the player is holding, from touch buttons and keys combined. */
 export interface HeldControls {
@@ -70,11 +94,7 @@ const STORAGE_KEY = 'cabra-rally-controls';
 
 export function loadControls(): ControlSettings {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') as Partial<ControlSettings>;
-    return {
-      scheme: saved.scheme === 'arrows' ? 'arrows' : 'classic',
-      swapSides: saved.swapSides === true,
-    };
+    return sanitizeControls(JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'));
   } catch {
     return { ...DEFAULT_CONTROLS };
   }

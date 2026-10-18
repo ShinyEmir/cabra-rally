@@ -276,6 +276,8 @@ Los controles se configuran en la pantalla **Controles** (desde el menú y desde
 
 **Lados:** en clásico, freno a la izquierda o gas a la izquierda; con flechas, pedales a la izquierda o flechas a la izquierda. Cambiar de lado solo mueve botones, nunca cambia lo que hacen.
 
+**Tamaño y opacidad** (pedido por Emir el 2026-10-18, porque los botones estorbaban): tamaño Pequeño, Mediano o Grande (escala 0.72, 0.85 y 1; Grande es el tamaño original) y opacidad del 30% al 100%. Por omisión: Mediano al 65%. Un botón apretado se ve al 100%. Mientras la pantalla Controles está abierta, los botones se ven detrás de la tarjeta para notar el cambio.
+
 | Siempre | Acción |
 | --- | --- |
 | R | Reiniciar la partida |
@@ -294,7 +296,7 @@ Los pedales usan `pointerdown`, `pointerup`, `pointercancel` y captura del punte
 ### Reglas de interfaz
 
 - Idioma de los textos: español de México.
-- Área mínima tocable de los botones: 44 px. Los pedales miden al menos 88 px de ancho.
+- Área mínima tocable de los botones: 44 px. En tamaño Grande los pedales miden al menos 88 px de ancho; en Mediano y Pequeño se reducen a petición del jugador, sin bajar de 44 px.
 - Respetar los márgenes seguros del teléfono (notch y barra inferior) con `env(safe-area-inset-*)`.
 - El lienzo ocupa toda la pantalla y se reescala con `devicePixelRatio`, con un máximo de 2.
 - Con `prefers-reduced-motion` se acortan las animaciones de texto.

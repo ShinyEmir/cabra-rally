@@ -27,6 +27,10 @@ ui.optClassic.addEventListener('click', () => game.setControls({ scheme: 'classi
 ui.optArrows.addEventListener('click', () => game.setControls({ scheme: 'arrows' }));
 ui.optSideNormal.addEventListener('click', () => game.setControls({ swapSides: false }));
 ui.optSideSwap.addEventListener('click', () => game.setControls({ swapSides: true }));
+ui.optSize.small.addEventListener('click', () => game.setControls({ size: 'small' }));
+ui.optSize.medium.addEventListener('click', () => game.setControls({ size: 'medium' }));
+ui.optSize.large.addEventListener('click', () => game.setControls({ size: 'large' }));
+ui.optOpacity.addEventListener('input', () => game.setControls({ opacity: Number(ui.optOpacity.value) }));
 
 window.addEventListener('resize', () => game.resize());
 window.addEventListener('blur', () => game.suspend());

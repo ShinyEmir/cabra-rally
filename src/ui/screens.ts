@@ -1,9 +1,12 @@
 // DOM side of the interface: menu, HUD, floating score texts, pause, results and controls.
 import type { TouchButtons } from '../input/pedals';
-import type { ControlSettings } from '../input/scheme';
+import type { ButtonSize, ControlSettings } from '../input/scheme';
 import { bestLine, coinsText, formatNumber, metersText, TEXT, type TextKey } from './strings';
 
 export type View = 'menu' | 'play' | 'pause' | 'over' | 'controls';
+
+/** Scale of the touch buttons for each size option; large is the original size. */
+const BUTTON_SCALE: Readonly<Record<ButtonSize, number>> = { small: 0.72, medium: 0.85, large: 1 };
 
 const POPS = {
   /** At most this many floating texts at once. */
@@ -45,6 +48,13 @@ export class Screens {
   readonly optArrows = byId<HTMLButtonElement>('optArrows');
   readonly optSideNormal = byId<HTMLButtonElement>('optSideNormal');
   readonly optSideSwap = byId<HTMLButtonElement>('optSideSwap');
+  readonly optSize: Readonly<Record<ButtonSize, HTMLButtonElement>> = {
+    small: byId<HTMLButtonElement>('optSizeSmall'),
+    medium: byId<HTMLButtonElement>('optSizeMedium'),
+    large: byId<HTMLButtonElement>('optSizeLarge'),
+  };
+  readonly optOpacity = byId<HTMLInputElement>('optOpacity');
+  private readonly opacityValue = byId('opacityValue');
 
   private readonly menu = byId('menu');
   private readonly over = byId('over');
@@ -84,7 +94,8 @@ export class Screens {
     this.controlsView.hidden = view !== 'controls';
     const playing = view === 'play' || view === 'pause';
     this.hud.hidden = !playing;
-    this.pads.hidden = !playing;
+    // the buttons stay visible behind the controls screen, so changes show live
+    this.pads.hidden = !playing && view !== 'controls';
   }
 
   /** Lays out the touch buttons and updates every text that depends on the control settings. */
@@ -103,6 +114,11 @@ export class Screens {
     mark(this.optArrows, arrows);
     mark(this.optSideNormal, !c.swapSides);
     mark(this.optSideSwap, c.swapSides);
+    for (const size of Object.keys(this.optSize) as ButtonSize[]) mark(this.optSize[size], c.size === size);
+    this.pads.style.setProperty('--pad-scale', String(BUTTON_SCALE[c.size]));
+    this.pads.style.setProperty('--pad-opacity', String(c.opacity));
+    this.optOpacity.value = String(c.opacity);
+    this.opacityValue.textContent = Math.round(c.opacity * 100) + '%';
     // small left-to-right sketch of where each button sits
     const pedals = [TEXT.brake, TEXT.gas];
     let order: string[];

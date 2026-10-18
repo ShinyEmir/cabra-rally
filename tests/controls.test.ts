@@ -3,10 +3,10 @@ import { newCar, PHY, stepCar } from '../src/core/physics';
 import { pedalsOnly } from '../src/core/run';
 import { DEFAULT_TERRAIN, type TerrainConfig } from '../src/core/terrain';
 import { DEFAULT_CAR_SHAPE } from '../src/core/vehicle';
-import { combineHeld, heldFromKeys, NOTHING_HELD, toDriveInput, type ControlSettings } from '../src/input/scheme';
+import { combineHeld, DEFAULT_CONTROLS, heldFromKeys, NOTHING_HELD, sanitizeControls, toDriveInput, type ControlSettings } from '../src/input/scheme';
 
-const CLASSIC: ControlSettings = { scheme: 'classic', swapSides: false };
-const ARROWS: ControlSettings = { scheme: 'arrows', swapSides: false };
+const CLASSIC: ControlSettings = { ...DEFAULT_CONTROLS, scheme: 'classic' };
+const ARROWS: ControlSettings = { ...DEFAULT_CONTROLS, scheme: 'arrows' };
 const FLAT: TerrainConfig = { amp: 0, kick: 0, kickH: 1, flatFrom: 1e9 };
 
 describe('control schemes', () => {
@@ -35,6 +35,20 @@ describe('control schemes', () => {
     expect(heldFromKeys(ARROWS, right)).toEqual({ ...NOTHING_HELD, tiltForward: true });
     expect(heldFromKeys(ARROWS, new Set(['w', 'a']))).toEqual({ ...NOTHING_HELD, gas: true, tiltBack: true });
     expect(combineHeld({ ...NOTHING_HELD, gas: true }, { ...NOTHING_HELD, tiltBack: true })).toEqual({ ...NOTHING_HELD, gas: true, tiltBack: true });
+  });
+});
+
+describe('saved control settings', () => {
+  it('defaults to classic, medium buttons at 65% opacity', () => {
+    expect(sanitizeControls(undefined)).toEqual({ scheme: 'classic', swapSides: false, size: 'medium', opacity: 0.65 });
+  });
+
+  it('keeps valid choices and repairs old or broken ones', () => {
+    // settings saved before size and opacity existed
+    expect(sanitizeControls({ scheme: 'arrows', swapSides: true })).toEqual({ scheme: 'arrows', swapSides: true, size: 'medium', opacity: 0.65 });
+    expect(sanitizeControls({ size: 'small', opacity: 0.4 })).toMatchObject({ size: 'small', opacity: 0.4 });
+    expect(sanitizeControls({ size: 'huge', opacity: 0 })).toMatchObject({ size: 'medium', opacity: 0.3 });
+    expect(sanitizeControls({ opacity: 'x', scheme: 7 })).toMatchObject({ scheme: 'classic', opacity: 0.65 });
   });
 });
 

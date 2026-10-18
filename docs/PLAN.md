@@ -64,12 +64,15 @@ La regla central: la física y las reglas del juego no tocan el navegador. Así 
 
 ```text
 cabra-rally/
+  docs/
+    PLAN.md               Este documento
   reference/
     prototype.html        Prototipo original, solo lectura
   src/
     core/                 Sin DOM ni canvas
-      physics.ts          stepCar, constantes PHY
-      terrain.ts          terrain(x), slopeAt(x), kickerAt(k)
+      math.ts             clamp, smooth, TAU (compartidos por terreno y física)
+      physics.ts          stepCar, newCar, constantes PHY
+      terrain.ts          terrain(x, td), slopeAt(x, td), kickerAt(k, td), TerrainConfig
       scoring.ts          volteretas, aire, caballito, aterrizaje
       modes.ts            Libre e Historia (reglas y parámetros)
       rng.ts              hash01 determinista
@@ -89,6 +92,7 @@ cabra-rally/
     main.ts
   tests/
     physics.test.ts
+    parity.test.ts        Corre la física del prototipo junto al port y compara cada paso
     scoring.test.ts
   CLAUDE.md               Reglas para Claude Code
 ```
@@ -109,6 +113,8 @@ La física ya funciona y está probada en el prototipo. El proyecto nuevo debe p
 Unidades: metros, segundos y radianes. El eje Y sube. La masa vale 1, así que las fuerzas se tratan como aceleraciones.
 
 **Estado del carro:** posición `x, y`, ángulo `a`, velocidad `vx, vy`, velocidad angular `w`, dos ruedas (contacto y extensión de suspensión), tiempo en el aire `air` y un contador `stuck`.
+
+**Carro nuevo** (`newCar(x)`): aparece en `y = terrain(x) + 1.05`, quieto y con ángulo 0, y cae sobre sus resortes en los primeros pasos. La rueda 0 es la trasera y la 1 la delantera.
 
 **Cada paso (1/240 s):**
 
@@ -156,12 +162,16 @@ Tras un choque el carro sigue simulándose 0.9 s sin control y luego aparece la 
 
 **Ajuste pendiente de jugabilidad:** al primer intento el giro en el aire era demasiado rápido. Se bajó `airTorque` de 18 a 11 y `airDamp` de 0.25 a 1.0. Si aún se siente rápido, estos dos números son los primeros que hay que mover. Una voltereta completa debe seguir siendo posible en una rampa de modo libre (unos 1.4 s de aire).
 
+Medido en la fase 1 con los valores actuales: con gas sostenido desde la salida, la primera rampa de modo libre (centro en x = 71.5) da 1.52 s de aire, pero el carro gira unos 508° (casi 1.4 vueltas hacia atrás) y cae de cabeza, con choque en x = 86.2 a los 7.8 s. Soltando el gas al despegar también choca, más adelante (x = 103.8). Es la primera evidencia para la fase 3: con gas sostenido el giro todavía se pasa de una vuelta.
+
 **Pruebas automáticas que debe cumplir `physics.test.ts`:**
 
-- Carro quieto sobre terreno plano: se asienta en `y` cercano a 0.92 sin desplazarse.
-- Gas sostenido en plano: velocidad cercana a 11 m/s a los 2 s, nunca mayor que `vmax`.
+- Carro quieto sobre terreno plano: se asienta en `y` cercano a 0.92 sin desplazarse (el prototipo da 0.9173 = 0.95 - g/(2k)).
+- Gas sostenido en plano: velocidad cercana a 12 m/s a los 2 s (el prototipo da 11.9; se acepta de 10.5 a 12.5), nunca mayor que `vmax`. La versión anterior de este documento decía 11.
 - Ningún valor se vuelve `NaN` o infinito en 60 s de simulación con cualquier combinación de gas y freno.
 - Una rampa de modo libre da más de 1 s de aire con gas sostenido.
+
+**Paridad con el prototipo (`parity.test.ts`, también `npm run compare`):** extrae el bloque `PHYSICS-START`/`PHYSICS-END` del prototipo, lo ejecuta junto al port con la misma entrada durante 60 s y exige el mismo estado completo en cada paso, con igualdad exacta. Escenarios: modo libre con gas sostenido, modo libre mixto, historia mixto y plano mixto. Tras un choque se sigue simulando sin control, como en el bucle del prototipo. Si se cambia un parámetro de física a propósito, esta prueba deja de servir tal cual: hay que comparar contra el prototipo con el mismo cambio o retirarla de forma explícita.
 
 ## Terreno, modos y puntaje
 
@@ -175,14 +185,20 @@ ramp = clamp((x - 20) / 260, 0, 1)               // la dificultad sube con la di
 A    = (0.45 + 1.35 * ramp) * amp
 h    = A * (sin(0.11x) + 0.45*sin(0.27x + 1.7) + 0.15*sin(0.61x + 0.4)) * f
 
-Rampas de lanzamiento (k = 0, 1, 2, ...):
+Rampas de lanzamiento (solo si kick > 0 y x > 50):
+  k       = floor((x - 53) / 48)                 // una rampa por ventana de 48 m
   centro  xc = 60 + 48*k + hash01(k)*14
   altura  H  = (1.5 + min(1.7, 0.15*k)) * kickH
   subida  entre xc-5 y xc    : + H * smooth((x - xc + 5) / 5)
   bajada  entre xc y xc+1.6  : + H * (1 - smooth((x - xc) / 1.6))
+
+Aplanado final (si x > flatFrom):
+  h *= 1 - smooth((x - flatFrom) / 20)          // llega a plano 20 m después
 ```
 
-`smooth(t)` es `t*t*(3 - 2t)` con `t` limitado entre 0 y 1. `hash01(n)` es un número pseudoaleatorio fijo entre 0 y 1 a partir de `n`. La pendiente se calcula numéricamente con una diferencia de 0.04 m a cada lado.
+`smooth(t)` es `t*t*(3 - 2t)` con `t` limitado entre 0 y 1. `hash01(n)` es `frac(sin(127.1n + 311.7) * 43758.5453)`, un número fijo entre 0 y 1 a partir de `n`. La pendiente se calcula numéricamente con una diferencia de 0.04 m a cada lado.
+
+La configuración del terreno es un objeto `TerrainConfig` con cuatro campos: `amp`, `kick` (rampas activas si es mayor que 0), `kickH` y `flatFrom`. En el prototipo era un objeto global `TD`; en `src/core` se pasa como parámetro. El valor por omisión `{ amp: 1, kick: 1, kickH: 1, flatFrom: 1e9 }` es el de modo libre.
 
 ### Modo libre
 
@@ -194,8 +210,8 @@ Rampas de lanzamiento (k = 0, 1, 2, ...):
 ### Modo historia
 
 - Nivel de 300 m con meta en `x = 300` y un estadio de fondo después de la meta.
-- Terreno más suave: `amp = 0.75`, `kickH = 0.7`, y se aplana desde `x = 260`.
-- 6 amigos en `x = 45, 95, 140, 185, 230, 268`. Se recogen al acercarse (distancia menor que 1.85 m del carro) y viajan en la caja.
+- Terreno más suave: `amp = 0.75`, `kickH = 0.7`, y se aplana desde `x = 260` (`flatFrom = 260`; queda plano en `x = 280`).
+- 6 amigos en `x = 45, 95, 140, 185, 230, 268`. Se recogen al acercarse y viajan en la caja. La distancia se mide del centro del carro al punto `(x, terrain(x) + 0.6)` del amigo y debe ser menor que la raíz de 3.4 (unos 1.84 m).
 - Al cruzar la meta: pantalla de victoria y bono de 200 puntos por cada amigo a bordo.
 - Cada nivel futuro cambia `amp`, `kickH`, el largo y la lista de amigos. Eso debe vivir en datos, no en código.
 
@@ -204,8 +220,8 @@ Rampas de lanzamiento (k = 0, 1, 2, ...):
 | Evento | Puntos | Condición |
 | --- | --- | --- |
 | Voltereta | 100 x número de voltereta en el mismo salto | Giro acumulado de 0.9 vueltas por cada voltereta (se cuenta hacia adelante o hacia atrás) |
-| Tiempo en el aire | 50 por segundo completo | Después de 0.12 s sin ruedas en el suelo |
-| Aterrizaje limpio | 50 | Salto de más de 0.9 s y ángulo final dentro de 0.5 rad |
+| Tiempo en el aire | 50 por segundo completo | El salto empieza tras 0.12 s sin ruedas en el suelo y los segundos se cuentan desde ahí, así que el primer bono llega a 1.12 s de aire |
+| Aterrizaje limpio | 50 | Salto de más de 0.9 s contados desde que empieza (más de 1.02 s de aire en total) y ángulo final dentro de 0.5 rad |
 | Caballito | 10 cada 0.6 s | Solo la rueda trasera en el suelo |
 | Bono de meta (historia) | 200 por amigo | Al cruzar la meta |
 
@@ -356,7 +372,7 @@ Las decisiones de la tabla no bloquean las fases 0 a 2. Claude Code debe usar la
 
 ## Instrucciones para Claude Code
 
-Para empezar: crear la carpeta del proyecto, guardar este documento como `PLAN.md` (exportado en Markdown) y copiar el prototipo a `reference/prototype.html`. Después abrir Claude Code en esa carpeta y pegar el texto de abajo.
+Para empezar: crear la carpeta del proyecto, guardar este documento como `docs/PLAN.md` (exportado en Markdown) y copiar el prototipo a `reference/prototype.html`. Después abrir Claude Code en esa carpeta y pegar el texto de abajo.
 
 ### Archivo CLAUDE.md
 
@@ -365,7 +381,7 @@ Guardarlo en la raíz del proyecto. Claude Code lo lee en cada sesión.
 ```markdown
 # Proyecto: juego de carrito por colinas (nombre provisional: Cabra Rally)
 
-Lee PLAN.md completo antes de hacer cambios. Es la fuente de decisiones.
+Lee docs/PLAN.md completo antes de hacer cambios. Es la fuente de decisiones.
 reference/prototype.html es la fuente de verdad del comportamiento.
 
 ## Reglas
@@ -373,7 +389,7 @@ reference/prototype.html es la fuente de verdad del comportamiento.
 - TypeScript con strict activado. Sin dependencias nuevas sin avisar.
 - src/core no importa nada de render, input, ui ni audio.
 - No usar emojis en el código, comentarios, commits ni mensajes.
-- Trabajar una fase del PLAN.md a la vez. No adelantar fases.
+- Trabajar una fase de docs/PLAN.md a la vez. No adelantar fases.
 - Antes de cambiar la física, correr npm test. Después de cambiarla, correrlo otra vez.
 - No copiar nombres, personajes, colores de equipo, logos ni arte de otros juegos.
 - Cualquier recurso externo debe ser de licencia libre y anotarse en CREDITS.md.

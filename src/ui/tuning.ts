@@ -80,8 +80,9 @@ export interface TuningHooks {
   onOpen(): void;
 }
 
+/** ?ajuste in the address, or #ajuste where the query string does not survive (hosted previews). */
 export function isTuningEnabled(): boolean {
-  return new URLSearchParams(window.location.search).has(TUNING.queryFlag);
+  return new URLSearchParams(window.location.search).has(TUNING.queryFlag) || window.location.hash === '#' + TUNING.queryFlag;
 }
 
 export function setupTuning(hooks: TuningHooks): void {

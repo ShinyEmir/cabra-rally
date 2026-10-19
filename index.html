@@ -41,24 +41,47 @@
       </div>
     </div>
 
-    <div class="overlay" id="menu">
-      <div class="card">
-        <h1 data-t="title"></h1>
-        <p class="tagline" data-t="tagline"></p>
-        <div class="modes">
-          <button class="btn" id="btnFree"><span data-t="freeMode"></span><small data-t="freeModeHint"></small></button>
-          <button class="btn alt" id="btnStory"><span data-t="storyMode"></span><small data-t="storyModeHint"></small></button>
+    <div class="home" id="menu">
+      <div class="topbar">
+        <button class="profile-pill" id="btnProfile">
+          <canvas id="homeAvatar" width="96" height="96" aria-hidden="true"></canvas>
+          <span><small data-t="driverLabel"></small><b id="homeDriver"></b></span>
+        </button>
+        <div class="topbar-right">
+          <div class="coin-pill"><i class="coin-icon" aria-hidden="true"></i><span id="homeCoins">0</span></div>
+          <button class="icon-btn sound" id="btnMenuSound"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z" /><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" /><path class="cross" d="m16 9 6 6m0-6-6 6" /></svg></button>
+          <button class="icon-btn" id="btnControls" data-t-label="controls"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2" /><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.8 1.8M16.7 16.7l1.8 1.8M5.5 18.5l1.8-1.8M16.7 7.3l1.8-1.8" /></svg></button>
         </div>
-        <p class="best" id="bestLine" hidden></p>
-        <p class="coin-total" id="coinTotal" hidden></p>
-        <div class="link-row">
-          <button class="link-btn" id="btnCharacters" data-t="characters"></button>
-          <button class="link-btn" id="btnControls" data-t="controls"></button>
-          <button class="link-btn" id="btnMenuSound"></button>
-        </div>
-        <p class="how" id="howTo"></p>
-        <p class="rotate" data-t="rotateHint"></p>
       </div>
+      <div class="home-side">
+        <button class="side-btn" id="btnCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.2" /><path d="M4.5 20.5c1.2-4 4-5.8 7.5-5.8s6.3 1.8 7.5 5.8" /></svg><span data-t="characters"></span></button>
+        <button class="side-btn" id="btnHomeStory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2.5 3.5L16 11H5" /></svg><span data-t="storyMode"></span></button>
+      </div>
+      <div class="home-title">
+        <h1 class="stroke" data-t="title"></h1>
+        <p class="tagline stroke" data-t="tagline"></p>
+        <p class="best stroke" id="bestLine" hidden></p>
+        <p class="rotate stroke" data-t="rotateHint"></p>
+      </div>
+      <button class="cta" id="btnPlay"><span data-t="play"></span><svg viewBox="0 0 36 24" aria-hidden="true"><path d="m4 5 7 7-7 7M14 5l7 7-7 7M24 5l7 7-7 7" /></svg></button>
+    </div>
+
+    <div class="screen" id="modesView" hidden>
+      <div class="topbar">
+        <button class="back-pill" id="btnModesBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg><span data-t="home"></span></button>
+        <div class="topbar-right"><div class="coin-pill"><i class="coin-icon" aria-hidden="true"></i><span id="modesCoins">0</span></div></div>
+      </div>
+      <div class="mode-cards">
+        <button class="mode-card" id="btnStory">
+          <span class="bubble"><b data-t="storyMode"></b><span data-t="storyModeHint"></span><small id="storyProgress"></small></span>
+          <canvas id="storyArt" width="320" height="150" aria-hidden="true"></canvas>
+        </button>
+        <button class="mode-card" id="btnFree">
+          <span class="bubble"><b data-t="freeMode"></b><span data-t="freeModeHint"></span><small id="freeBest"></small></span>
+          <canvas id="freeArt" width="320" height="150" aria-hidden="true"></canvas>
+        </button>
+      </div>
+      <p class="how stroke" id="howTo"></p>
     </div>
 
     <div class="overlay" id="over" hidden>
@@ -91,40 +114,57 @@
       </div>
     </div>
 
-    <div class="overlay" id="levelsView" hidden>
-      <div class="card">
-        <h2 data-t="levelsTitle"></h2>
+    <div class="screen" id="levelsView" hidden>
+      <div class="topbar">
+        <button class="back-pill" id="btnLevelsBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg><span data-t="modes"></span></button>
+        <h2 class="screen-title stroke" data-t="levelsTitle"></h2>
+        <div class="topbar-right"><div class="coin-pill"><i class="coin-icon" aria-hidden="true"></i><span id="levelsCoins">0</span></div></div>
+      </div>
+      <div class="panel">
         <div class="levels" id="levelList"></div>
-        <div class="modes spaced">
-          <button class="btn ghost" id="btnLevelsBack" data-t="levelsBack"></button>
-        </div>
       </div>
     </div>
 
-    <div class="overlay" id="charactersView" hidden>
-      <div class="card">
-        <h2 data-t="characters"></h2>
-        <div class="garage">
-          <div class="garage-car">
-            <canvas id="carPreview" width="260" height="130" aria-hidden="true"></canvas>
-            <p class="setting-label" data-t="carColorLabel"></p>
+    <div class="screen" id="charactersView" hidden>
+      <div class="topbar">
+        <button class="back-pill" id="btnCharactersDone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg><span data-t="home"></span></button>
+        <h2 class="screen-title stroke" data-t="characters"></h2>
+        <div class="topbar-right"><div class="coin-pill"><i class="coin-icon" aria-hidden="true"></i><span id="garageCoins">0</span></div></div>
+      </div>
+      <div class="profile">
+        <div class="stats">
+          <div class="stat accent"><canvas id="profileAvatar" width="96" height="96" aria-hidden="true"></canvas><b id="profileName"></b></div>
+          <div class="stat"><small data-t="bestScoreLabel"></small><b id="statBest">0</b></div>
+          <div class="stat"><small data-t="bestDistanceLabel"></small><b id="statDist">0 m</b></div>
+        </div>
+        <div class="picker">
+          <div class="picker-card">
+            <button class="nav-arrow" id="driverPrev" data-t-label="previous"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg></button>
+            <canvas id="driverArt" width="260" height="210" aria-hidden="true"></canvas>
+            <button class="nav-arrow" id="driverNext" data-t-label="next"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7" /></svg></button>
+            <span class="tag" data-t="selected"></span>
+          </div>
+          <p class="picker-caption"><b id="driverName"></b><small id="driverTrait"></small></p>
+          <div class="dots" id="driverDots" aria-hidden="true"></div>
+        </div>
+        <div class="picker">
+          <div class="picker-card car">
+            <canvas id="carPreview" width="300" height="150" aria-hidden="true"></canvas>
             <div class="swatches" id="colorList" role="radiogroup"></div>
-            <p class="coin-total" id="garageCoins"></p>
           </div>
-          <div class="garage-drivers">
-            <p class="setting-label" data-t="driverLabel"></p>
-            <div class="drivers" id="driverList" role="radiogroup"></div>
-          </div>
-        </div>
-        <div class="modes spaced">
-          <button class="btn" id="btnCharactersDone" data-t="done"></button>
+          <p class="picker-caption"><small data-t="paintCar"></small><b id="colorName"></b></p>
         </div>
       </div>
     </div>
 
-    <div class="overlay" id="controlsView" hidden>
-      <div class="card">
-        <h2 data-t="controls"></h2>
+    <div class="screen" id="controlsView" hidden>
+      <div class="topbar">
+        <button class="back-pill" id="btnControlsDone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg><span data-t="back"></span></button>
+        <h2 class="screen-title stroke" data-t="controls"></h2>
+        <div class="topbar-right"></div>
+      </div>
+      <div class="panel settings">
+        <div class="settings-col">
         <p class="setting-label" data-t="schemeLabel"></p>
         <div class="choice" role="radiogroup">
           <button class="opt" id="optClassic" role="radio"><span data-t="schemeClassic"></span><small data-t="schemeClassicHint"></small></button>
@@ -136,6 +176,8 @@
           <button class="opt" id="optSideSwap" role="radio"><span id="sideSwapText"></span></button>
         </div>
         <div class="layout-preview" id="layoutPreview" aria-hidden="true"></div>
+        </div>
+        <div class="settings-col">
         <p class="setting-label" data-t="sizeLabel"></p>
         <div class="choice compact" role="radiogroup">
           <button class="opt" id="optSizeSmall" role="radio"><span data-t="sizeSmall"></span></button>
@@ -144,10 +186,8 @@
         </div>
         <label class="setting-label slider-label" for="optOpacity"><span data-t="opacityLabel"></span><b id="opacityValue"></b></label>
         <input class="opacity-slider" type="range" id="optOpacity" min="0.3" max="1" step="0.05" />
-        <p class="how" id="controlsHow"></p>
-        <div class="modes spaced">
-          <button class="btn" id="btnControlsDone" data-t="done"></button>
         </div>
+        <p class="how" id="controlsHow"></p>
       </div>
     </div>
 

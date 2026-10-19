@@ -315,6 +315,14 @@ Los pedales usan `pointerdown`, `pointerup`, `pointercancel` y captura del punte
 ### Pantallas
 
 - **Menú:** nombre del juego, botón Modo libre, botón Historia, mejor puntaje del modo libre, aviso para girar el teléfono si está vertical. El carro se asienta en la primera colina detrás del menú.
+
+**Rediseño de la fase 5 (2026-10-18), siguiendo el orden de la referencia de Emir sin copiar su identidad:**
+
+- **Inicio:** sin tarjeta al centro; el carro se ve en el camino. Arriba a la izquierda, una píldora con la cara del conductor (abre el perfil); arriba a la derecha, las monedas, sonido y controles. A la derecha, accesos a Personajes e Historia. El nombre y el récord quedan a la izquierda, y un botón grande "¡A correr!" abajo a la derecha abre la elección de modo.
+- **Elegir modo:** dos globos de diálogo sobre un dibujo: Historia (amigos, con "N de 5 niveles") y Modo libre (tu carro, con tu récord).
+- **Perfil y personajes:** a la izquierda tus datos (conductor, mejor puntaje, distancia máxima del modo libre, guardada en `cabra-rally-best-distance`); al centro un carrusel con flechas para elegir conductor, con la etiqueta "Seleccionado" y puntos de posición; a la derecha el carro con sus colores.
+- **Barra superior común:** píldora de tinta para regresar y píldora con las monedas en todas las pantallas del menú. Las pantallas completas oscurecen y desenfocan el juego detrás, salvo Controles, que deja ver los botones como vista previa y acomoda sus ajustes en dos columnas.
+- **Niveles:** cada tarjeta lleva una franja con los colores de su mundo.
 - **HUD durante la partida:** puntaje grande arriba a la izquierda, distancia y monedas debajo, botón de pausa arriba a la derecha. En historia, un contador de amigos y una barra de progreso hacia el estadio.
 - **Textos flotantes:** hasta 4 a la vez, suben y se desvanecen en 1.3 s.
 - **Pausa:** Seguir y Salir.

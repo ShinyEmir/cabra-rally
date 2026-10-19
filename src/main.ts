@@ -19,9 +19,13 @@ const game = new Game(ui, keys, touch, sfx);
 window.addEventListener('pointerdown', () => sfx.unlock(), { capture: true });
 window.addEventListener('keydown', () => sfx.unlock(), { capture: true });
 
+ui.btnPlay.addEventListener('click', () => game.showModes());
+ui.btnModesBack.addEventListener('click', () => game.showMenu());
+ui.btnHomeStory.addEventListener('click', () => game.showLevels());
+ui.btnProfile.addEventListener('click', () => game.showCharacters());
 ui.btnFree.addEventListener('click', () => game.startFree());
 ui.btnStory.addEventListener('click', () => game.showLevels());
-ui.btnLevelsBack.addEventListener('click', () => game.showMenu());
+ui.btnLevelsBack.addEventListener('click', () => game.showModes());
 ui.btnCharacters.addEventListener('click', () => game.showCharacters());
 ui.btnCharactersDone.addEventListener('click', () => game.showMenu());
 ui.btnNext.addEventListener('click', () => game.nextLevel());

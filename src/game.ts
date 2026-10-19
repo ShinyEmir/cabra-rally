@@ -1,6 +1,6 @@
-// Main loop and game state machine: menu (main menu or level select), play, paused, crash, over.
+// Main loop and game state machine: menu (home, modes, levels, characters), play, paused, crash, over.
 // Physics runs at a fixed 1/240 s step inside updateRun(); drawing runs at the display rate.
-import { ANIMALS, animalById } from './core/animals';
+import { ANIMALS, animalById, friendAnimal, type AnimalSpec } from './core/animals';
 import { LEVELS, storyMode } from './core/levels';
 import { clamp } from './core/math';
 import { FREE_MODE, type ModeSpec } from './core/modes';
@@ -14,7 +14,7 @@ import type { KeyState } from './input/keyboard';
 import type { TouchState } from './input/pedals';
 import { combineHeld, heldFromKeys, loadControls, saveControls, toDriveInput, type ControlSettings } from './input/scheme';
 import { followCar, measureScreen, type Camera, type Screen } from './render/camera';
-import { drawAnimalStanding } from './render/draw-animal';
+import { drawAnimalHead, drawAnimalStanding } from './render/draw-animal';
 import { CAR_COLORS, carColorById, drawCar } from './render/draw-car';
 import { renderFrame, type SceneLook } from './render/draw-world';
 import { worldById } from './render/worlds';
@@ -30,6 +30,7 @@ const GAME = {
   bestKey: 'cabra-rally-best',
   storyKey: 'cabra-rally-story',
   coinsKey: 'cabra-rally-coins',
+  distanceKey: 'cabra-rally-best-distance',
   /** Camera offset from the car when a run starts. */
   camStartX: 3,
   camStartY: 1,
@@ -48,17 +49,36 @@ function saveBest(best: number): void {
   try { localStorage.setItem(GAME.bestKey, String(best)); } catch { /* storage may be unavailable */ }
 }
 
-function loadCoins(): number {
+/** A saved whole number that is never negative (coins, distance). */
+function loadCount(key: string): number {
   try {
-    const v = parseInt(localStorage.getItem(GAME.coinsKey) || '0', 10);
+    const v = parseInt(localStorage.getItem(key) || '0', 10);
     return isNaN(v) || v < 0 ? 0 : v;
   } catch {
     return 0;
   }
 }
 
-function saveCoins(n: number): void {
-  try { localStorage.setItem(GAME.coinsKey, String(n)); } catch { /* storage may be unavailable */ }
+function saveCount(key: string, n: number): void {
+  try { localStorage.setItem(key, String(n)); } catch { /* storage may be unavailable */ }
+}
+
+/** Clears a menu canvas and returns its context, or null when canvas drawing is unavailable. */
+function paintStart(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return null;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
+  return ctx;
+}
+
+/** A round portrait: the animal's head, a bit left of center so snouts and beaks fit. */
+function paintHead(canvas: HTMLCanvasElement, a: AnimalSpec): void {
+  const ctx = paintStart(canvas);
+  if (!ctx) return;
+  const big = a.snout === 'beakBig';
+  const S = canvas.height / (big ? 1.25 : 0.95);
+  ctx.setTransform(S, 0, 0, -S, canvas.width * (big ? 0.36 : 0.44), canvas.height * 0.54);
+  drawAnimalHead(ctx, a, 0, 0, 0.3, 1);
 }
 
 function loadProgress(): StoryProgress {
@@ -87,7 +107,9 @@ export class Game {
   unlockAll = false;
   private garage: Garage = loadGarage();
   /** Coins kept across runs; there is no shop yet. */
-  private savedCoins = loadCoins();
+  private savedCoins = loadCount(GAME.coinsKey);
+  /** Longest free mode run, in meters. */
+  private bestDistance = loadCount(GAME.distanceKey);
   /** Screen to go back to when the controls screen closes. */
   private controlsReturn: View = 'menu';
 
@@ -152,14 +174,47 @@ export class Game {
     // the last car stays on screen and settles with no control
     this.run.phase = 'idle';
     this.best = loadBest();
-    this.ui.setBest(this.best);
-    this.ui.setCoinTotal(this.savedCoins);
+    this.ui.setCoins(this.savedCoins);
     this.ui.show('menu');
+    const driver = animalById(this.garage.driver);
+    this.ui.setHome({ driverName: animalText(driver.id).name, best: this.best, paintAvatar: (c) => paintHead(c, driver) });
+  }
+
+  /** Mode select: story or free mode, each with a drawing and the player's progress. */
+  showModes(): void {
+    this.state = 'menu';
+    this.run.phase = 'idle';
+    this.ui.setCoins(this.savedCoins);
+    this.ui.show('modes');
+    this.ui.showModes({
+      levelsDone: LEVELS.filter((l) => this.progress[l.id]?.done).length,
+      levelsTotal: LEVELS.length,
+      best: this.best,
+      paintStory: (canvas) => {
+        const ctx = paintStart(canvas);
+        if (!ctx) return;
+        const S = canvas.height / 2.1;
+        for (let i = 0; i < 3; i++) {
+          ctx.setTransform(S, 0, 0, -S, canvas.width * (0.24 + i * 0.27), canvas.height * 0.86);
+          drawAnimalStanding(ctx, friendAnimal(i), 0, 0, 0.6 + i);
+        }
+      },
+      paintFree: (canvas) => {
+        const ctx = paintStart(canvas);
+        if (!ctx) return;
+        const S = canvas.height / 2.2, car = newCar(0);
+        car.x = 0; car.y = 0;
+        ctx.setTransform(S, 0, 0, -S, canvas.width * 0.5, canvas.height * 0.62);
+        const driver = animalById(this.garage.driver);
+        drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(this.garage.carColor) });
+      },
+    });
   }
 
   showLevels(): void {
     this.state = 'menu';
     this.run.phase = 'idle';
+    this.ui.setCoins(this.savedCoins);
     this.ui.showLevels(LEVELS.map((level, i) => {
       const p = this.progress[level.id];
       const unlocked = this.unlockAll || isUnlocked(LEVELS, this.progress, i);
@@ -170,6 +225,7 @@ export class Game {
         unlocked,
         done: p?.done === true,
         status: !unlocked ? TEXT.levelLocked : p?.done ? TEXT.levelDone + ' · ' + friendsText(p.bestFriends, level.friends.length) : '',
+        tint: [worldById(level.world).sky[0], worldById(level.world).hills[2]],
       };
     }), (i) => this.startLevel(i));
     this.ui.show('levels');
@@ -204,11 +260,12 @@ export class Game {
   private finishRun(): void {
     const run = this.run, score = run.score;
     this.savedCoins += run.coins;
-    saveCoins(this.savedCoins);
+    saveCount(GAME.coinsKey, this.savedCoins);
     let newBest = false;
     let story: Parameters<Screens['showResults']>[0]['story'] = null;
     if (this.levelIndex < 0) {
       if (score > this.best) { this.best = score; saveBest(score); newBest = score > 0; }
+      if (distance(run) > this.bestDistance) { this.bestDistance = distance(run); saveCount(GAME.distanceKey, this.bestDistance); }
     } else {
       const level = LEVELS[this.levelIndex];
       if (run.won) { this.progress = recordWin(this.progress, level.id, run.friendsAboard, score); saveProgress(this.progress); }
@@ -295,8 +352,9 @@ export class Game {
 
   showCharacters(): void {
     if (this.state !== 'menu') return;
-    this.refreshCharacters();
+    this.ui.setCoins(this.savedCoins);
     this.ui.show('characters');
+    this.refreshCharacters();
   }
 
   private refreshCharacters(): void {
@@ -305,21 +363,21 @@ export class Game {
       colors: CAR_COLORS.map((c) => ({ id: c.id, name: CAR_COLOR_NAMES[c.id] ?? c.id, swatch: c.body })),
       driver: this.garage.driver,
       color: this.garage.carColor,
-      coins: this.savedCoins,
+      best: this.best,
+      bestDistance: this.bestDistance,
+      paintAvatar: (canvas, id) => paintHead(canvas, animalById(id)),
       paintDriver: (canvas, id) => {
-        const ctx = canvas.getContext('2d');
+        const ctx = paintStart(canvas);
         if (!ctx) return;
-        const S = canvas.height / 1.9;
-        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.setTransform(S, 0, 0, -S, canvas.width * 0.5, canvas.height * 0.92);
+        const S = canvas.height / 1.75;
+        ctx.setTransform(S, 0, 0, -S, canvas.width * 0.54, canvas.height * 0.9);
         drawAnimalStanding(ctx, animalById(id), 0, 0, 0.3);
       },
       paintCar: (canvas) => {
-        const ctx = canvas.getContext('2d');
+        const ctx = paintStart(canvas);
         if (!ctx) return;
-        const S = canvas.height / 2.1, car = newCar(0);
+        const S = canvas.height / 2.15, car = newCar(0);
         car.x = 0; car.y = 0;
-        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.setTransform(S, 0, 0, -S, canvas.width * 0.5, canvas.height * 0.6);
         const driver = animalById(this.garage.driver);
         drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(this.garage.carColor) });

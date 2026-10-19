@@ -1,9 +1,11 @@
-// DOM side of the interface: menu, level select, HUD, floating texts, pause, results and controls.
+// DOM side of the interface: home, mode select, level select, profile and characters, HUD,
+// floating texts, pause, results and controls. Drawing on the small canvases is done by the
+// caller through paint callbacks, because the game owns the drawing code.
 import type { TouchButtons } from '../input/pedals';
 import type { ButtonSize, ControlSettings } from '../input/scheme';
-import { bestLine, coinsText, formatNumber, friendsText, metersText, savedCoinsText, TEXT, type TextKey } from './strings';
+import { bestLine, coinsText, formatNumber, freeBestText, friendsText, metersText, storyProgressText, TEXT, type TextKey } from './strings';
 
-export type View = 'menu' | 'levels' | 'characters' | 'play' | 'pause' | 'over' | 'controls';
+export type View = 'menu' | 'modes' | 'levels' | 'characters' | 'play' | 'pause' | 'over' | 'controls';
 
 /** Scale of the touch buttons for each size option; large is the original size. */
 const BUTTON_SCALE: Readonly<Record<ButtonSize, number>> = { small: 0.72, medium: 0.85, large: 1 };
@@ -20,6 +22,8 @@ function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   return el as T;
 }
 
+export type Painter = (canvas: HTMLCanvasElement) => void;
+
 export interface Results {
   score: number;
   distance: number;
@@ -29,15 +33,31 @@ export interface Results {
   story: { won: boolean; friends: number; total: number; hasNext: boolean } | null;
 }
 
-/** What the characters screen shows; painting is done by the caller (the game owns drawing). */
+export interface HomeView {
+  driverName: string;
+  best: number;
+  paintAvatar: Painter;
+}
+
+export interface ModesView {
+  levelsDone: number;
+  levelsTotal: number;
+  best: number;
+  paintStory: Painter;
+  paintFree: Painter;
+}
+
+/** What the profile and characters screen shows. */
 export interface GarageView {
   drivers: ReadonlyArray<{ id: string; name: string; trait: string }>;
   colors: ReadonlyArray<{ id: string; name: string; swatch: string }>;
   driver: string;
   color: string;
-  coins: number;
+  best: number;
+  bestDistance: number;
   paintDriver(canvas: HTMLCanvasElement, id: string): void;
-  paintCar(canvas: HTMLCanvasElement): void;
+  paintAvatar(canvas: HTMLCanvasElement, id: string): void;
+  paintCar: Painter;
   pickDriver(id: string): void;
   pickColor(id: string): void;
 }
@@ -51,6 +71,15 @@ export interface LevelCard {
   /** Shown under the facts, for example the best result. */
   status: string;
   done: boolean;
+  /** Sky and hill colors of the level's world, for the band on top of the card. */
+  tint: readonly [string, string];
+}
+
+/** Sizes a canvas to its displayed size times the device pixel ratio, for crisp drawings. */
+export function fitCanvas(canvas: HTMLCanvasElement): void {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.round((canvas.clientWidth || canvas.width) * dpr), h = Math.round((canvas.clientHeight || canvas.height) * dpr);
+  if (w > 0 && h > 0 && (canvas.width !== w || canvas.height !== h)) { canvas.width = w; canvas.height = h; }
 }
 
 export class Screens {
@@ -61,6 +90,10 @@ export class Screens {
     tiltBack: byId('padBack'),
     tiltForward: byId('padForward'),
   };
+  readonly btnPlay = byId<HTMLButtonElement>('btnPlay');
+  readonly btnProfile = byId<HTMLButtonElement>('btnProfile');
+  readonly btnHomeStory = byId<HTMLButtonElement>('btnHomeStory');
+  readonly btnModesBack = byId<HTMLButtonElement>('btnModesBack');
   readonly btnFree = byId<HTMLButtonElement>('btnFree');
   readonly btnStory = byId<HTMLButtonElement>('btnStory');
   readonly btnNext = byId<HTMLButtonElement>('btnNext');
@@ -89,17 +122,30 @@ export class Screens {
   readonly optOpacity = byId<HTMLInputElement>('optOpacity');
   private readonly opacityValue = byId('opacityValue');
 
-  private readonly menu = byId('menu');
-  private readonly over = byId('over');
-  private readonly pauseView = byId('pauseView');
-  private readonly controlsView = byId('controlsView');
-  private readonly levelsView = byId('levelsView');
-  private readonly charactersView = byId('charactersView');
-  private readonly driverList = byId('driverList');
-  private readonly colorList = byId('colorList');
-  private readonly carPreview = byId<HTMLCanvasElement>('carPreview');
-  private readonly garageCoins = byId('garageCoins');
-  private readonly coinTotal = byId('coinTotal');
+  private readonly views: Readonly<Record<string, HTMLElement>> = {
+    menu: byId('menu'),
+    modes: byId('modesView'),
+    levels: byId('levelsView'),
+    characters: byId('charactersView'),
+    over: byId('over'),
+    pause: byId('pauseView'),
+    controls: byId('controlsView'),
+  };
+  private readonly coinEls = ['homeCoins', 'modesCoins', 'levelsCoins', 'garageCoins'].map((id) => byId(id));
+  private readonly home = { avatar: byId<HTMLCanvasElement>('homeAvatar'), driver: byId('homeDriver'), best: byId('bestLine') };
+  private readonly modes = {
+    story: byId<HTMLCanvasElement>('storyArt'), free: byId<HTMLCanvasElement>('freeArt'),
+    progress: byId('storyProgress'), best: byId('freeBest'),
+  };
+  private readonly profile = {
+    avatar: byId<HTMLCanvasElement>('profileAvatar'), name: byId('profileName'),
+    best: byId('statBest'), dist: byId('statDist'),
+    art: byId<HTMLCanvasElement>('driverArt'), driverName: byId('driverName'), trait: byId('driverTrait'),
+    dots: byId('driverDots'), prev: byId<HTMLButtonElement>('driverPrev'), next: byId<HTMLButtonElement>('driverNext'),
+    colors: byId('colorList'), car: byId<HTMLCanvasElement>('carPreview'), colorName: byId('colorName'),
+  };
+  /** The last garage shown, so the carousel arrows know where to go. */
+  private garage: GarageView | null = null;
   private readonly levelList = byId('levelList');
   private readonly progBox = byId('progBox');
   private readonly progFill = byId('progFill');
@@ -112,7 +158,6 @@ export class Screens {
   private readonly hud = byId('hud');
   private readonly pads = byId('pads');
   private readonly pops = byId('pops');
-  private readonly bestEl = byId('bestLine');
   private readonly newBestEl = byId('newBest');
   private readonly lastShown = new Map<HTMLElement, string>();
   private readonly fields = {
@@ -131,15 +176,19 @@ export class Screens {
     // static texts come from strings.ts
     for (const el of document.querySelectorAll<HTMLElement>('[data-t]')) el.textContent = TEXT[el.dataset.t as TextKey];
     for (const el of document.querySelectorAll<HTMLElement>('[data-t-label]')) el.setAttribute('aria-label', TEXT[el.dataset.tLabel as TextKey]);
+    // driver carousel arrows cycle through the cast
+    const step = (dir: number) => {
+      const g = this.garage;
+      if (!g) return;
+      const i = g.drivers.findIndex((d) => d.id === g.driver);
+      g.pickDriver(g.drivers[(i + dir + g.drivers.length) % g.drivers.length].id);
+    };
+    this.profile.prev.addEventListener('click', () => step(-1));
+    this.profile.next.addEventListener('click', () => step(1));
   }
 
   show(view: View): void {
-    this.menu.hidden = view !== 'menu';
-    this.over.hidden = view !== 'over';
-    this.pauseView.hidden = view !== 'pause';
-    this.controlsView.hidden = view !== 'controls';
-    this.levelsView.hidden = view !== 'levels';
-    this.charactersView.hidden = view !== 'characters';
+    for (const [name, el] of Object.entries(this.views)) el.hidden = name !== view;
     const playing = view === 'play' || view === 'pause';
     this.hud.hidden = !playing;
     // the buttons stay visible behind the controls screen, so changes show live
@@ -180,14 +229,30 @@ export class Screens {
     }));
   }
 
-  setBest(best: number): void {
-    this.bestEl.hidden = best <= 0;
-    this.bestEl.textContent = bestLine(best);
-  }
-
   /** Only touches the DOM when a value changes. */
   private set(el: HTMLElement, v: string): void {
     if (this.lastShown.get(el) !== v) { this.lastShown.set(el, v); el.textContent = v; }
+  }
+
+  /** Saved coins, shown in the top bar of every menu screen. */
+  setCoins(n: number): void {
+    for (const el of this.coinEls) this.set(el, formatNumber(n));
+  }
+
+  setHome(h: HomeView): void {
+    this.home.driver.textContent = h.driverName;
+    this.home.best.hidden = h.best <= 0;
+    this.home.best.textContent = bestLine(h.best);
+    fitCanvas(this.home.avatar);
+    h.paintAvatar(this.home.avatar);
+  }
+
+  /** Fills the mode select screen. Call after show('modes') so the drawings get their real size. */
+  showModes(m: ModesView): void {
+    this.modes.progress.textContent = storyProgressText(m.levelsDone, m.levelsTotal);
+    this.modes.best.textContent = freeBestText(m.best);
+    fitCanvas(this.modes.story); m.paintStory(this.modes.story);
+    fitCanvas(this.modes.free); m.paintFree(this.modes.free);
   }
 
   setHud(score: number, distance: number, coins: number): void {
@@ -211,7 +276,10 @@ export class Screens {
       facts.textContent = c.facts;
       const status = document.createElement('em');
       status.textContent = c.status;
-      b.append(num, name, facts, status);
+      const band = document.createElement('i');
+      band.className = 'level-band';
+      band.style.background = `linear-gradient(180deg, ${c.tint[0]} 0 55%, ${c.tint[1]} 55%)`;
+      b.append(band, num, name, facts, status);
       b.addEventListener('click', () => onPick(i));
       return b;
     }));
@@ -225,40 +293,28 @@ export class Screens {
   }
 
   setMuted(muted: boolean): void {
-    this.btnSound.classList.toggle('muted', muted);
-    this.btnSound.setAttribute('aria-label', muted ? TEXT.unmuteLabel : TEXT.muteLabel);
-    this.btnMenuSound.textContent = muted ? TEXT.soundOff : TEXT.soundOn;
+    for (const b of [this.btnSound, this.btnMenuSound]) {
+      b.classList.toggle('muted', muted);
+      b.setAttribute('aria-label', muted ? TEXT.unmuteLabel : TEXT.muteLabel);
+    }
   }
 
-  /** Saved coins under the menu buttons; hidden while there are none. */
-  setCoinTotal(n: number): void {
-    this.coinTotal.hidden = n <= 0;
-    this.coinTotal.textContent = savedCoinsText(n);
-  }
-
-  /** Fills the characters screen. Call again after a pick to refresh the marks and the preview. */
+  /** Fills the profile and characters screen. Call again after a pick to refresh it. */
   showCharacters(g: GarageView): void {
-    const firstTime = this.driverList.children.length === 0;
-    if (firstTime) {
-      this.driverList.replaceChildren(...g.drivers.map((d) => {
-        const b = document.createElement('button');
-        b.className = 'driver';
-        b.setAttribute('role', 'radio');
-        b.dataset.id = d.id;
-        const canvas = document.createElement('canvas');
-        canvas.width = 220; canvas.height = 190;
-        canvas.setAttribute('aria-hidden', 'true');
-        const name = document.createElement('span');
-        name.className = 'driver-name';
-        name.textContent = d.name;
-        const trait = document.createElement('small');
-        trait.textContent = d.trait;
-        b.append(canvas, name, trait);
-        b.addEventListener('click', () => g.pickDriver(d.id));
-        g.paintDriver(canvas, d.id);
-        return b;
-      }));
-      this.colorList.replaceChildren(...g.colors.map((c) => {
+    this.garage = g;
+    const p = this.profile;
+    const driver = g.drivers.find((d) => d.id === g.driver) ?? g.drivers[0];
+    p.name.textContent = driver.name;
+    p.driverName.textContent = driver.name;
+    p.trait.textContent = driver.trait;
+    p.best.textContent = formatNumber(g.best);
+    p.dist.textContent = metersText(g.bestDistance);
+    if (p.dots.children.length !== g.drivers.length) {
+      p.dots.replaceChildren(...g.drivers.map(() => document.createElement('i')));
+    }
+    g.drivers.forEach((d, i) => p.dots.children[i].classList.toggle('on', d.id === g.driver));
+    if (p.colors.children.length === 0) {
+      p.colors.replaceChildren(...g.colors.map((c) => {
         const b = document.createElement('button');
         b.className = 'swatch';
         b.setAttribute('role', 'radio');
@@ -266,26 +322,18 @@ export class Screens {
         b.title = c.name;
         b.dataset.id = c.id;
         b.style.setProperty('--swatch', c.swatch);
-        b.addEventListener('click', () => g.pickColor(c.id));
+        b.addEventListener('click', () => this.garage?.pickColor(c.id));
         return b;
       }));
     }
-    for (const el of this.driverList.children) {
-      const on = (el as HTMLElement).dataset.id === g.driver;
-      el.classList.toggle('selected', on); el.setAttribute('aria-checked', String(on));
-    }
-    for (const el of this.colorList.children) {
+    for (const el of p.colors.children) {
       const on = (el as HTMLElement).dataset.id === g.color;
       el.classList.toggle('selected', on); el.setAttribute('aria-checked', String(on));
     }
-    this.garageCoins.textContent = savedCoinsText(g.coins);
-    g.paintCar(this.carPreview);
-    if (firstTime) {
-      requestAnimationFrame(() => {
-        const list = this.driverList, el = list.querySelector('.selected') as HTMLElement | null;
-        if (el) list.scrollLeft = el.offsetLeft - (list.clientWidth - el.offsetWidth) / 2;
-      });
-    }
+    p.colorName.textContent = g.colors.find((c) => c.id === g.color)?.name ?? '';
+    fitCanvas(p.avatar); g.paintAvatar(p.avatar, g.driver);
+    fitCanvas(p.art); g.paintDriver(p.art, g.driver);
+    fitCanvas(p.car); g.paintCar(p.car);
   }
 
   /** Friend counter and progress bar toward the stadium; null hides them (free mode). */
@@ -301,7 +349,7 @@ export class Screens {
     this.overExtra.hidden = r.story === null;
     if (r.story) this.set(this.fields.overFriends, friendsText(r.story.friends, r.story.total));
     this.btnNext.hidden = !(r.story?.won && r.story.hasNext);
-    this.btnMenu.textContent = r.story ? TEXT.levelsButton : TEXT.menu;
+    this.btnMenu.textContent = r.story ? TEXT.levelsButton : TEXT.home;
     this.set(this.fields.overScore, formatNumber(r.score));
     this.set(this.fields.overDist, metersText(r.distance));
     this.set(this.fields.overCoins, String(r.coins));

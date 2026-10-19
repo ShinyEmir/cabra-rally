@@ -5,7 +5,17 @@ export const TEXT = {
   title: 'Cerro Arriba',
   tagline: 'Maneja por las colinas, haz vueltas en el aire y junta puntos.',
   freeMode: 'Modo libre',
-  freeModeHint: 'Infinito. Solo tú y los puntos.',
+  freeModeHint: 'Recorre el cerro sin fin y rompe tu récord.',
+  play: '¡A correr!',
+  home: 'Inicio',
+  modes: 'Modos',
+  back: 'Atrás',
+  bestScoreLabel: 'Mejor puntaje',
+  bestDistanceLabel: 'Distancia máxima',
+  previous: 'Anterior',
+  next: 'Siguiente',
+  selected: 'Seleccionado',
+  paintCar: 'Pinta tu carro',
   storyMode: 'Historia',
   storyModeHint: 'Recoge a tus amigos y llévalos al estadio.',
   levelsTitle: 'Historia',
@@ -101,6 +111,14 @@ export const CAR_COLOR_NAMES: Readonly<Record<string, string>> = {
   mango: 'Amarillo mango',
   jacaranda: 'Morado jacaranda',
 };
+
+export function storyProgressText(done: number, total: number): string {
+  return done + ' de ' + total + ' niveles';
+}
+
+export function freeBestText(best: number): string {
+  return best > 0 ? 'Récord: ' + formatNumber(best) : 'Sin récord todavía';
+}
 
 export function savedCoinsText(n: number): string {
   return formatNumber(n) + (n === 1 ? ' moneda guardada' : ' monedas guardadas');

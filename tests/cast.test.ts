@@ -13,7 +13,12 @@ import { ANIMAL_TEXT, CAR_COLOR_NAMES } from '../src/ui/strings';
 function fakeContext(): { ctx: CanvasRenderingContext2D; calls: () => number } {
   let calls = 0;
   const ctx = new Proxy({}, {
-    get: (_t, prop) => (prop === 'canvas' ? {} : () => { calls++; }),
+    get: (_t, prop) => (prop === 'canvas' ? {} : (...args: unknown[]) => {
+      calls++;
+      void args;
+      // gradients need an object to add color stops to
+      return String(prop).startsWith('create') ? { addColorStop: () => { calls++; } } : undefined;
+    }),
     set: () => true,
   }) as unknown as CanvasRenderingContext2D;
   return { ctx, calls: () => calls };

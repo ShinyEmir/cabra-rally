@@ -5,7 +5,8 @@ import type { Coin } from '../core/coins';
 import { TAU } from '../core/math';
 import { hash01 } from '../core/rng';
 import type { Run } from '../core/run';
-import { terrain } from '../core/terrain';
+import { slopeAt, terrain } from '../core/terrain';
+import type { Car } from '../core/physics';
 import { CAMERA, type Camera, type Screen } from './camera';
 import { drawAnimalStanding } from './draw-animal';
 import { drawCar, type CarLook } from './draw-car';
@@ -49,6 +50,15 @@ const GROUND = {
 } as const;
 
 const COIN = { fill: '#f4b92a', shine: '#ffe27a' } as const;
+
+const CAR_SHADOW = {
+  /** Height of the car center above the ground when resting on its wheels. */
+  rest: 0.92,
+  /** The shadow fades out completely at this height above resting, in meters. */
+  fadeHeight: 5,
+  alpha: 0.24,
+  width: 1.45,
+} as const;
 
 // Generic stadium with no name or crest, as the plan requires.
 const STADIUM = {
@@ -223,6 +233,18 @@ function drawStadium(ctx: CanvasRenderingContext2D, finishX: number, td: Run['mo
   ctx.restore();
 }
 
+/** Soft shadow on the ground under the car; smaller and lighter the higher it jumps. */
+function drawCarShadow(ctx: CanvasRenderingContext2D, car: Car, td: Run['mode']['terrain']): void {
+  const gy = terrain(car.x, td);
+  const k = 1 - Math.max(0, car.y - gy - CAR_SHADOW.rest) / CAR_SHADOW.fadeHeight;
+  if (k <= 0) return;
+  ctx.save();
+  ctx.translate(car.x, gy + 0.03); ctx.rotate(Math.atan(slopeAt(car.x, td)));
+  ctx.fillStyle = 'rgba(31, 58, 52, ' + (CAR_SHADOW.alpha * k).toFixed(3) + ')';
+  ctx.beginPath(); ctx.ellipse(0, 0, CAR_SHADOW.width * (0.6 + 0.4 * k), 0.12, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
 /** World-space scene. Expects the world transform (meters, y up) to be set. */
 export function drawWorld(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, run: Run, parts: readonly Particle[], t: number, look: SceneLook): void {
   const { W, H, S } = scr;
@@ -251,6 +273,7 @@ export function drawWorld(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camer
   ctx.restore();
 
   if (run.mode.finish) drawStadium(ctx, run.mode.finish.x, td);
+  drawCarShadow(ctx, run.car, td);
   for (const c of run.field.items) {
     if (c.got || c.x < x0 || c.x > x1) continue;
     drawCoin(ctx, c, t);

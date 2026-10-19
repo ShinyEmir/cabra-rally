@@ -5,6 +5,8 @@ import { LEVELS, storyMode } from './core/levels';
 import { clamp } from './core/math';
 import { FREE_MODE, type ModeSpec } from './core/modes';
 import { isUnlocked, recordWin, sanitizeProgress, type StoryProgress } from './core/progress';
+import { CHALLENGES, challengeValue, sanitizeChallenges, updateChallenges, type ChallengeContext, type ChallengeProgress } from './core/challenges';
+import { accessoryById, buy, equipAccessory, isOwned, sanitizeShop, SHOP_ITEMS, type ShopState } from './core/shop';
 import { newCar } from './core/physics';
 import { carShapeFor } from './core/vehicle';
 import { loadGarage, saveGarage, type Garage } from './garage';
@@ -20,7 +22,7 @@ import { renderFrame, type SceneLook } from './render/draw-world';
 import { worldById } from './render/worlds';
 import { coinBurst, emitDriving, friendBurst, updateParticles, type Particle } from './render/particles';
 import type { Screens, View } from './ui/screens';
-import { animalText, CAR_COLOR_NAMES, describeScore, friendsText, levelFacts, levelName, levelNumber, TEXT } from './ui/strings';
+import { ACCESSORY_NAMES, animalText, CAR_COLOR_NAMES, challengesSummaryText, challengeText, describeScore, friendsText, levelFacts, levelName, levelNumber, TEXT } from './ui/strings';
 
 export type GameState = 'menu' | 'play' | 'paused' | 'crash' | 'over';
 
@@ -31,6 +33,8 @@ const GAME = {
   storyKey: 'cabra-rally-story',
   coinsKey: 'cabra-rally-coins',
   distanceKey: 'cabra-rally-best-distance',
+  shopKey: 'cabra-rally-shop',
+  challengesKey: 'cabra-rally-challenges',
   /** Camera offset from the car when a run starts. */
   camStartX: 3,
   camStartY: 1,
@@ -63,6 +67,15 @@ function saveCount(key: string, n: number): void {
   try { localStorage.setItem(key, String(n)); } catch { /* storage may be unavailable */ }
 }
 
+/** Reads saved JSON through a sanitizer; broken or missing data gives the sanitizer's defaults. */
+function loadJson<T>(key: string, sanitize: (raw: unknown) => T): T {
+  try { return sanitize(JSON.parse(localStorage.getItem(key) || '{}')); } catch { return sanitize({}); }
+}
+
+function saveJson(key: string, value: unknown): void {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* storage may be unavailable */ }
+}
+
 /** Clears a menu canvas and returns its context, or null when canvas drawing is unavailable. */
 function paintStart(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
   const ctx = canvas.getContext('2d');
@@ -72,13 +85,13 @@ function paintStart(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null 
 }
 
 /** A round portrait: the animal's head, a bit left of center so snouts and beaks fit. */
-function paintHead(canvas: HTMLCanvasElement, a: AnimalSpec): void {
+function paintHead(canvas: HTMLCanvasElement, a: AnimalSpec, accessory: ReturnType<typeof accessoryById> = null): void {
   const ctx = paintStart(canvas);
   if (!ctx) return;
   const big = a.snout === 'beakBig';
   const S = canvas.height / (big ? 1.25 : 0.95);
   ctx.setTransform(S, 0, 0, -S, canvas.width * (big ? 0.36 : 0.44), canvas.height * 0.54);
-  drawAnimalHead(ctx, a, 0, 0, 0.3, 1);
+  drawAnimalHead(ctx, a, 0, 0, 0.3, 1, accessory);
 }
 
 function loadProgress(): StoryProgress {
@@ -106,8 +119,13 @@ export class Game {
   /** Opens every level (set from the ?ajuste panel, for testing). */
   unlockAll = false;
   private garage: Garage = loadGarage();
-  /** Coins kept across runs; there is no shop yet. */
+  /** Coins kept across runs, spent in the shop. */
   private savedCoins = loadCount(GAME.coinsKey);
+  private shop: ShopState = loadJson(GAME.shopKey, sanitizeShop);
+  private challenges: ChallengeProgress = loadJson(GAME.challengesKey, sanitizeChallenges);
+  /** Challenges met during the current run, for the results screen. */
+  private runChallenges: Array<{ text: string; reward: number }> = [];
+  private shopTab: 'accessory' | 'paint' = 'accessory';
   /** Longest free mode run, in meters. */
   private bestDistance = loadCount(GAME.distanceKey);
   /** Screen to go back to when the controls screen closes. */
@@ -163,6 +181,7 @@ export class Game {
     this.cam.x = this.run.car.x + GAME.camStartX;
     this.cam.y = this.run.car.y + GAME.camStartY;
     this.ui.clearPops();
+    this.runChallenges = [];
     this.ui.setHud(0, 0, 0);
     this.updateStoryHud();
     this.state = 'play';
@@ -177,7 +196,7 @@ export class Game {
     this.ui.setCoins(this.savedCoins);
     this.ui.show('menu');
     const driver = animalById(this.garage.driver);
-    this.ui.setHome({ driverName: animalText(driver.id).name, best: this.best, paintAvatar: (c) => paintHead(c, driver) });
+    this.ui.setHome({ driverName: animalText(driver.id).name, best: this.best, paintAvatar: (c) => paintHead(c, driver, accessoryById(this.shop.accessory)) });
   }
 
   /** Mode select: story or free mode, each with a drawing and the player's progress. */
@@ -206,7 +225,7 @@ export class Game {
         car.x = 0; car.y = 0;
         ctx.setTransform(S, 0, 0, -S, canvas.width * 0.5, canvas.height * 0.62);
         const driver = animalById(this.garage.driver);
-        drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(this.garage.carColor) });
+        drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(this.garage.carColor), accessory: accessoryById(this.shop.accessory) });
       },
     });
   }
@@ -271,7 +290,9 @@ export class Game {
       if (run.won) { this.progress = recordWin(this.progress, level.id, run.friendsAboard, score); saveProgress(this.progress); }
       story = { won: run.won, friends: run.friendsAboard, total: run.friends.length, hasNext: this.levelIndex + 1 < LEVELS.length };
     }
-    this.ui.showResults({ score, distance: distance(run), coins: run.coins, newBest, story });
+    // story totals only change here, after the win is recorded
+    this.checkChallenges(false);
+    this.ui.showResults({ score, distance: distance(run), coins: run.coins, newBest, story, challenges: this.runChallenges });
     this.state = 'over';
     this.ui.show('over');
   }
@@ -330,6 +351,7 @@ export class Game {
         else this.sfx.wheelie();
       }
       if (ev.won) this.sfx.win();
+      if (this.state === 'play') this.checkChallenges(true);
       if (ev.finished) this.finishRun();
       emitDriving(this.parts, run.car, dt, input.thr > 0 && this.state === 'play');
       this.ui.setHud(run.score, distance(run), run.coins);
@@ -337,6 +359,117 @@ export class Game {
     }
     updateParticles(this.parts, dt);
     followCar(this.cam, run.car, dt);
+  }
+
+  private challengeContext(): ChallengeContext {
+    const run = this.run;
+    return {
+      mode: this.levelIndex < 0 ? 'free' : 'story',
+      distance: distance(run),
+      coins: run.coins,
+      maxFlips: run.stats.maxFlips,
+      maxJump: run.stats.maxJump,
+      maxWheelie: run.stats.maxWheelie,
+      levelsDone: LEVELS.filter((l) => this.progress[l.id]?.done).length,
+      levelsWithAllFriends: LEVELS.filter((l) => (this.progress[l.id]?.bestFriends ?? 0) >= l.friends.length).length,
+    };
+  }
+
+  /** Pays challenges met for the first time; during a run it also announces them. */
+  private checkChallenges(announce: boolean): void {
+    const r = updateChallenges(CHALLENGES, this.challenges, this.challengeContext());
+    if (r.completed.length === 0) {
+      // keep the best values even without a completion
+      this.challenges = r.progress;
+      return;
+    }
+    this.challenges = r.progress;
+    saveJson(GAME.challengesKey, this.challenges);
+    for (const c of r.completed) {
+      this.savedCoins += c.reward;
+      this.runChallenges.push({ text: challengeText(c.kind, c.target), reward: c.reward });
+      if (announce) this.ui.pop(TEXT.challengeDone, c.reward, false);
+    }
+    saveCount(GAME.coinsKey, this.savedCoins);
+    if (announce) this.sfx.cleanLanding();
+  }
+
+  showChallenges(): void {
+    if (this.state !== 'menu') return;
+    saveJson(GAME.challengesKey, this.challenges);
+    this.ui.setCoins(this.savedCoins);
+    this.ui.show('challenges');
+    const done = new Set(this.challenges.done);
+    this.ui.showChallenges(CHALLENGES.map((c) => ({
+      text: challengeText(c.kind, c.target),
+      reward: c.reward,
+      value: Math.max(this.challenges.best[c.id] ?? 0, c.kind === 'levelsDone' || c.kind === 'allFriends' ? challengeValue(c, this.challengeContext()) : 0),
+      target: c.target,
+      done: done.has(c.id),
+    })), challengesSummaryText(done.size, CHALLENGES.length));
+  }
+
+  showShop(tab: 'accessory' | 'paint' = this.shopTab): void {
+    if (this.state !== 'menu') return;
+    this.shopTab = tab;
+    this.ui.setCoins(this.savedCoins);
+    this.ui.show('shop');
+    const driver = animalById(this.garage.driver);
+    this.ui.showShop({
+      tab,
+      cards: SHOP_ITEMS.filter((i) => i.kind === tab).map((i) => ({
+        id: i.id,
+        name: (tab === 'accessory' ? ACCESSORY_NAMES[i.id] : CAR_COLOR_NAMES[i.id]) ?? i.id,
+        price: i.price,
+        owned: isOwned(this.shop, i.id),
+        inUse: tab === 'accessory' ? this.shop.accessory === i.id : this.garage.carColor === i.id,
+        affordable: this.savedCoins >= i.price,
+      })),
+      paint: (canvas, id) => {
+        const ctx = paintStart(canvas);
+        if (!ctx) return;
+        if (tab === 'accessory') {
+          const S = canvas.height / 1.15;
+          ctx.setTransform(S, 0, 0, -S, canvas.width * 0.46, canvas.height * 0.62);
+          drawAnimalHead(ctx, driver, 0, 0, 0.3, 1, accessoryById(id));
+        } else {
+          const S = canvas.height / 2.2, car = newCar(0);
+          car.x = 0; car.y = 0;
+          ctx.setTransform(S, 0, 0, -S, canvas.width * 0.5, canvas.height * 0.62);
+          drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(id), accessory: accessoryById(this.shop.accessory) });
+        }
+      },
+      pickTab: (t) => this.showShop(t),
+      act: (id) => this.shopAction(id),
+    });
+  }
+
+  /** Buys the item, or wears/takes off an accessory, or chooses a paint. */
+  private shopAction(id: string): void {
+    const item = SHOP_ITEMS.find((i) => i.id === id);
+    if (!item) return;
+    if (!isOwned(this.shop, id)) {
+      const r = buy(this.shop, item, this.savedCoins);
+      if (!r) return;
+      this.shop = r.state;
+      this.savedCoins = r.coins;
+      saveCount(GAME.coinsKey, this.savedCoins);
+      this.sfx.coin();
+      // wear or use what was just bought
+      if (item.kind === 'accessory') this.shop = equipAccessory(this.shop, id);
+      else this.setGarage({ carColor: id });
+    } else if (item.kind === 'accessory') {
+      this.shop = equipAccessory(this.shop, this.shop.accessory === id ? null : id);
+    } else {
+      this.setGarage({ carColor: id });
+    }
+    saveJson(GAME.shopKey, this.shop);
+    this.showShop(item.kind);
+  }
+
+  /** Car paints the player can use: the free ones plus those bought. */
+  private availableColors(): typeof CAR_COLORS[number][] {
+    return CAR_COLORS.filter((c) => !SHOP_ITEMS.some((i) => i.id === c.id) || isOwned(this.shop, c.id));
   }
 
   get currentGarage(): Readonly<Garage> {
@@ -360,18 +493,18 @@ export class Game {
   private refreshCharacters(): void {
     this.ui.showCharacters({
       drivers: ANIMALS.map((a) => ({ id: a.id, ...animalText(a.id) })),
-      colors: CAR_COLORS.map((c) => ({ id: c.id, name: CAR_COLOR_NAMES[c.id] ?? c.id, swatch: c.body })),
+      colors: this.availableColors().map((c) => ({ id: c.id, name: CAR_COLOR_NAMES[c.id] ?? c.id, swatch: c.body })),
       driver: this.garage.driver,
       color: this.garage.carColor,
       best: this.best,
       bestDistance: this.bestDistance,
-      paintAvatar: (canvas, id) => paintHead(canvas, animalById(id)),
+      paintAvatar: (canvas, id) => paintHead(canvas, animalById(id), accessoryById(this.shop.accessory)),
       paintDriver: (canvas, id) => {
         const ctx = paintStart(canvas);
         if (!ctx) return;
         const S = canvas.height / 1.75;
         ctx.setTransform(S, 0, 0, -S, canvas.width * 0.54, canvas.height * 0.9);
-        drawAnimalStanding(ctx, animalById(id), 0, 0, 0.3);
+        drawAnimalStanding(ctx, animalById(id), 0, 0, 0.3, accessoryById(this.shop.accessory));
       },
       paintCar: (canvas) => {
         const ctx = paintStart(canvas);
@@ -380,7 +513,7 @@ export class Game {
         car.x = 0; car.y = 0;
         ctx.setTransform(S, 0, 0, -S, canvas.width * 0.5, canvas.height * 0.6);
         const driver = animalById(this.garage.driver);
-        drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(this.garage.carColor) });
+        drawCar(ctx, car, [0.4, 0.4], carShapeFor(driver), { driver, color: carColorById(this.garage.carColor), accessory: accessoryById(this.shop.accessory) });
       },
       pickDriver: (id) => { this.setGarage({ driver: id }); this.refreshCharacters(); },
       pickColor: (id) => { this.setGarage({ carColor: id }); this.refreshCharacters(); },
@@ -390,7 +523,7 @@ export class Game {
   private look(): SceneLook {
     return {
       world: worldById(this.run.mode.world),
-      car: { driver: animalById(this.garage.driver), color: carColorById(this.garage.carColor) },
+      car: { driver: animalById(this.garage.driver), color: carColorById(this.garage.carColor), accessory: accessoryById(this.shop.accessory) },
     };
   }
 

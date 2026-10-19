@@ -50,12 +50,23 @@ export interface Run {
   friendsAboard: number;
   /** Crossed the finish line. */
   won: boolean;
+  /** Best moments of this run, for challenges. */
+  stats: RunStats;
   scoring: ScoringState;
   crashT: number;
   /** Unspent frame time for the fixed physics step. */
   acc: number;
   /** Visual wheel rotation, radians. */
   wheelRot: [number, number];
+}
+
+export interface RunStats {
+  /** Most flips in a single jump. */
+  maxFlips: number;
+  /** Longest jump, in seconds (counted like the air time score). */
+  maxJump: number;
+  /** Longest wheelie, in seconds. */
+  maxWheelie: number;
 }
 
 /** Player input for one frame. Each value is in [-1, 1]. */
@@ -95,7 +106,7 @@ export function createRun(mode: Readonly<ModeSpec>, phase: 'idle' | 'play', acc 
   return {
     mode, shape, phase, car, startX: car.x, score: 0, coins: 0, field,
     friends: mode.friends.map((x, i) => ({ x, y: terrain(x, mode.terrain), got: false, i })),
-    friendsAboard: 0, won: false,
+    friendsAboard: 0, won: false, stats: { maxFlips: 0, maxJump: 0, maxWheelie: 0 },
     scoring: createScoring(), crashT: 0, acc, wheelRot: [0, 0],
   };
 }
@@ -137,6 +148,9 @@ export function updateRun(run: Run, dt: number, input: DriveInput | number): Fra
     }
     updateScoring(run.scoring, car, dt, ev.score);
     for (const e of ev.score) run.score += e.points;
+    const st = run.stats, sc = run.scoring;
+    if (sc.jump.on) { st.maxFlips = Math.max(st.maxFlips, sc.jump.flips); st.maxJump = Math.max(st.maxJump, sc.jump.t); }
+    st.maxWheelie = Math.max(st.maxWheelie, sc.wheelie);
     const finish = run.mode.finish;
     if (finish && car.x >= finish.x) {
       ev.bonus = run.friendsAboard * finish.friendBonus;

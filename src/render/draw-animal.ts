@@ -4,6 +4,8 @@
 // Every filled shape gets the same soft lighting: a highlight from the upper back and a shade
 // along the bottom, then the dark outline on top.
 import type { AnimalSpec } from '../core/animals';
+import type { AccessorySpec } from '../core/shop';
+import { drawAccessory } from './draw-accessory';
 import { TAU } from '../core/math';
 import { INK } from './shapes';
 
@@ -300,8 +302,8 @@ function drawEye(ctx: CanvasRenderingContext2D, a: AnimalSpec, W: number, H: num
   ellipsePath(ctx, px + 0.035 * r, y - 0.05 * r, 0.015 * r, 0.015 * r); ctx.fill();
 }
 
-/** Head centered at (cx, cy) with radius r. look moves the pupil forward. */
-export function drawAnimalHead(ctx: CanvasRenderingContext2D, a: AnimalSpec, cx: number, cy: number, r: number, look = 1): void {
+/** Head centered at (cx, cy) with radius r. look moves the pupil forward; accessory is worn on top. */
+export function drawAnimalHead(ctx: CanvasRenderingContext2D, a: AnimalSpec, cx: number, cy: number, r: number, look = 1, accessory: Readonly<AccessorySpec> | null = null): void {
   const W = r * a.head.w, H = r * a.head.h;
   ctx.save();
   ctx.translate(cx, cy);
@@ -322,6 +324,7 @@ export function drawAnimalHead(ctx: CanvasRenderingContext2D, a: AnimalSpec, cx:
   drawCheek(ctx, a, W, H, r);
   drawSnout(ctx, a, W, H, r);
   drawEye(ctx, a, W, H, r, look);
+  if (accessory) drawAccessory(ctx, accessory, W, H, r);
   ctx.restore();
 }
 
@@ -414,7 +417,7 @@ function drawBodyPattern(ctx: CanvasRenderingContext2D, a: AnimalSpec, rx: numbe
  * Full animal standing at (x, y) (feet on the ground), bobbing and waving, as the friends
  * waiting in story mode and in the character screen.
  */
-export function drawAnimalStanding(ctx: CanvasRenderingContext2D, a: AnimalSpec, x: number, y: number, t: number): void {
+export function drawAnimalStanding(ctx: CanvasRenderingContext2D, a: AnimalSpec, x: number, y: number, t: number, accessory: Readonly<AccessorySpec> | null = null): void {
   const c = a.colors;
   const hover = a.body === 'hover';
   const bob = hover ? 0.45 + Math.sin(t * 6 + x) * 0.06 : Math.abs(Math.sin(t * 5 + x)) * 0.1;
@@ -468,7 +471,7 @@ export function drawAnimalStanding(ctx: CanvasRenderingContext2D, a: AnimalSpec,
     shadeFill(ctx, limb, 0.35, 0.62, 0.2);
     blob(ctx, hx, hy, 0.075, 0.075, paw);
   }
-  drawAnimalHead(ctx, a, 0.34, 0.96, 0.25, 1);
+  drawAnimalHead(ctx, a, 0.34, 0.96, 0.25, 1, accessory);
   ctx.restore();
 }
 

@@ -5,7 +5,35 @@ import type { TouchButtons } from '../input/pedals';
 import type { ButtonSize, ControlSettings } from '../input/scheme';
 import { bestLine, coinsText, formatNumber, freeBestText, friendsText, metersText, storyProgressText, TEXT, type TextKey } from './strings';
 
-export type View = 'menu' | 'modes' | 'levels' | 'characters' | 'play' | 'pause' | 'over' | 'controls';
+export type View = 'menu' | 'modes' | 'levels' | 'characters' | 'shop' | 'challenges' | 'play' | 'pause' | 'over' | 'controls';
+
+/** One card in the shop. */
+export interface ShopCard {
+  id: string;
+  name: string;
+  price: number;
+  owned: boolean;
+  /** Worn (accessory) or chosen (paint) right now. */
+  inUse: boolean;
+  affordable: boolean;
+}
+
+export interface ShopView {
+  tab: 'accessory' | 'paint';
+  cards: readonly ShopCard[];
+  paint(canvas: HTMLCanvasElement, id: string): void;
+  pickTab(tab: 'accessory' | 'paint'): void;
+  /** Buy, wear, take off or choose, depending on the card's state. */
+  act(id: string): void;
+}
+
+export interface ChallengeRow {
+  text: string;
+  reward: number;
+  value: number;
+  target: number;
+  done: boolean;
+}
 
 /** Scale of the touch buttons for each size option; large is the original size. */
 const BUTTON_SCALE: Readonly<Record<ButtonSize, number>> = { small: 0.72, medium: 0.85, large: 1 };
@@ -31,6 +59,8 @@ export interface Results {
   newBest: boolean;
   /** Story runs only. */
   story: { won: boolean; friends: number; total: number; hasNext: boolean } | null;
+  /** Challenges met during this run, already worded. */
+  challenges: ReadonlyArray<{ text: string; reward: number }>;
 }
 
 export interface HomeView {
@@ -99,6 +129,10 @@ export class Screens {
   readonly btnNext = byId<HTMLButtonElement>('btnNext');
   readonly btnLevelsBack = byId<HTMLButtonElement>('btnLevelsBack');
   readonly btnCharacters = byId<HTMLButtonElement>('btnCharacters');
+  readonly btnShop = byId<HTMLButtonElement>('btnShop');
+  readonly btnShopBack = byId<HTMLButtonElement>('btnShopBack');
+  readonly btnChallenges = byId<HTMLButtonElement>('btnChallenges');
+  readonly btnChallengesBack = byId<HTMLButtonElement>('btnChallengesBack');
   readonly btnSound = byId<HTMLButtonElement>('btnSound');
   readonly btnMenuSound = byId<HTMLButtonElement>('btnMenuSound');
   readonly btnCharactersDone = byId<HTMLButtonElement>('btnCharactersDone');
@@ -127,11 +161,18 @@ export class Screens {
     modes: byId('modesView'),
     levels: byId('levelsView'),
     characters: byId('charactersView'),
+    shop: byId('shopView'),
+    challenges: byId('challengesView'),
     over: byId('over'),
     pause: byId('pauseView'),
     controls: byId('controlsView'),
   };
-  private readonly coinEls = ['homeCoins', 'modesCoins', 'levelsCoins', 'garageCoins'].map((id) => byId(id));
+  private readonly coinEls = ['homeCoins', 'modesCoins', 'levelsCoins', 'garageCoins', 'shopCoins', 'challengesCoins'].map((id) => byId(id));
+  private readonly shopEls = { items: byId('shopItems'), tabAccessories: byId<HTMLButtonElement>('tabAccessories'), tabPaints: byId<HTMLButtonElement>('tabPaints') };
+  /** The last shop shown, so the tabs know whom to tell. */
+  private shopView: ShopView | null = null;
+  private readonly challengeEls = { list: byId('challengeList'), summary: byId('challengeSummary') };
+  private readonly overChallenges = byId('overChallenges');
   private readonly home = { avatar: byId<HTMLCanvasElement>('homeAvatar'), driver: byId('homeDriver'), best: byId('bestLine') };
   private readonly modes = {
     story: byId<HTMLCanvasElement>('storyArt'), free: byId<HTMLCanvasElement>('freeArt'),
@@ -185,6 +226,74 @@ export class Screens {
     };
     this.profile.prev.addEventListener('click', () => step(-1));
     this.profile.next.addEventListener('click', () => step(1));
+    this.shopEls.tabAccessories.addEventListener('click', () => this.shopView?.pickTab('accessory'));
+    this.shopEls.tabPaints.addEventListener('click', () => this.shopView?.pickTab('paint'));
+  }
+
+  /** Fills the shop. Call after show('shop') so the drawings get their real size. */
+  showShop(v: ShopView): void {
+    this.shopView = v;
+    const tabs: Array<[HTMLButtonElement, boolean]> = [[this.shopEls.tabAccessories, v.tab === 'accessory'], [this.shopEls.tabPaints, v.tab === 'paint']];
+    for (const [el, on] of tabs) { el.classList.toggle('selected', on); el.setAttribute('aria-selected', String(on)); }
+    this.shopEls.items.replaceChildren(...v.cards.map((c) => {
+      const card = document.createElement('div');
+      card.className = 'shop-card' + (c.inUse ? ' in-use' : '');
+      const canvas = document.createElement('canvas');
+      canvas.width = 200; canvas.height = 150;
+      canvas.setAttribute('aria-hidden', 'true');
+      const name = document.createElement('span');
+      name.className = 'shop-name';
+      name.textContent = c.name;
+      const button = document.createElement('button');
+      button.className = 'shop-btn';
+      if (!c.owned) {
+        button.classList.add('buy');
+        button.disabled = !c.affordable;
+        const coin = document.createElement('i');
+        coin.className = 'coin-icon';
+        coin.setAttribute('aria-hidden', 'true');
+        button.append(TEXT.buy + ' ', coin, ' ' + formatNumber(c.price));
+      } else if (c.inUse) {
+        button.textContent = v.tab === 'accessory' ? TEXT.remove : TEXT.equipped;
+        button.classList.add('in-use');
+        button.disabled = v.tab === 'paint';
+      } else {
+        button.textContent = TEXT.equip;
+      }
+      button.addEventListener('click', () => this.shopView?.act(c.id));
+      card.append(canvas, name, button);
+      return card;
+    }));
+    requestAnimationFrame(() => {
+      v.cards.forEach((c, i) => {
+        const canvas = this.shopEls.items.children[i]?.querySelector('canvas');
+        if (canvas) { fitCanvas(canvas); v.paint(canvas, c.id); }
+      });
+    });
+  }
+
+  showChallenges(rows: readonly ChallengeRow[], summary: string): void {
+    this.challengeEls.summary.textContent = summary;
+    this.challengeEls.list.replaceChildren(...rows.map((r) => {
+      const row = document.createElement('div');
+      row.className = 'challenge' + (r.done ? ' done' : '');
+      const text = document.createElement('span');
+      text.className = 'challenge-text';
+      text.textContent = r.text;
+      const bar = document.createElement('div');
+      bar.className = 'challenge-bar';
+      const fill = document.createElement('i');
+      fill.style.width = Math.min(100, (r.done ? 1 : r.value / r.target) * 100).toFixed(0) + '%';
+      bar.append(fill);
+      const reward = document.createElement('span');
+      reward.className = 'challenge-reward';
+      const coin = document.createElement('i');
+      coin.className = 'coin-icon';
+      coin.setAttribute('aria-hidden', 'true');
+      reward.append(coin, (r.done ? '' : '+') + formatNumber(r.reward));
+      row.append(text, reward, bar);
+      return row;
+    }));
   }
 
   show(view: View): void {
@@ -354,6 +463,17 @@ export class Screens {
     this.set(this.fields.overDist, metersText(r.distance));
     this.set(this.fields.overCoins, String(r.coins));
     this.newBestEl.hidden = !r.newBest;
+    this.overChallenges.hidden = r.challenges.length === 0;
+    const title = document.createElement('small');
+    title.textContent = TEXT.challengesEarned;
+    this.overChallenges.replaceChildren(title, ...r.challenges.map((c) => {
+      const line = document.createElement('span');
+      line.textContent = c.text + ' ';
+      const b = document.createElement('b');
+      b.textContent = '+' + formatNumber(c.reward);
+      line.append(b);
+      return line;
+    }));
   }
 
   pop(text: string, points: number, small: boolean): void {

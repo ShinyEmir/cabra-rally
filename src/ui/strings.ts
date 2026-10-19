@@ -8,6 +8,16 @@ export const TEXT = {
   freeModeHint: 'Recorre el cerro sin fin y rompe tu récord.',
   play: '¡A correr!',
   install: 'Instalar',
+  shop: 'Tienda',
+  challenges: 'Retos',
+  accessoriesTab: 'Accesorios',
+  paintsTab: 'Pinturas',
+  buy: 'Comprar',
+  equip: 'Usar',
+  equipped: 'En uso',
+  remove: 'Quitar',
+  challengeDone: 'Reto cumplido',
+  challengesEarned: 'Retos cumplidos',
   iosInstallHint: 'Para instalarlo en iPhone: toca Compartir y luego Agregar a pantalla de inicio.',
   home: 'Inicio',
   modes: 'Modos',
@@ -112,7 +122,38 @@ export const CAR_COLOR_NAMES: Readonly<Record<string, string>> = {
   nopal: 'Verde nopal',
   mango: 'Amarillo mango',
   jacaranda: 'Morado jacaranda',
+  turquesa: 'Turquesa',
+  arena: 'Arena de playa',
+  rosa: 'Rosa mexicano',
+  obsidiana: 'Obsidiana',
 };
+
+export const ACCESSORY_NAMES: Readonly<Record<string, string>> = {
+  sombrero: 'Sombrero',
+  lentes: 'Lentes de sol',
+  paliacate: 'Paliacate',
+  gorra: 'Gorra',
+  flores: 'Corona de flores',
+  mono: 'Moño',
+};
+
+/** Text of a challenge, from its kind and target, so new challenges need no new text. */
+export function challengeText(kind: string, target: number): string {
+  switch (kind) {
+    case 'flipsInJump': return target === 1 ? 'Haz una voltereta' : 'Haz ' + target + ' volteretas en un solo salto';
+    case 'freeDistance': return 'Recorre ' + formatNumber(target) + ' m en modo libre';
+    case 'coinsInRun': return 'Junta ' + target + ' monedas en una partida';
+    case 'jumpTime': return 'Pasa ' + target + ' segundos en el aire en un salto';
+    case 'wheelieTime': return 'Haz un caballito de ' + target + ' segundos';
+    case 'levelsDone': return target === 1 ? 'Termina un nivel de historia' : 'Termina ' + target + ' niveles de historia';
+    case 'allFriends': return target === 1 ? 'Lleva a todos los amigos al estadio en un nivel' : 'Lleva a todos los amigos en ' + target + ' niveles';
+    default: return kind;
+  }
+}
+
+export function challengesSummaryText(done: number, total: number): string {
+  return done + ' de ' + total + ' retos cumplidos';
+}
 
 export function storyProgressText(done: number, total: number): string {
   return done + ' de ' + total + ' niveles';

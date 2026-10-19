@@ -4,6 +4,7 @@
 import { friendAnimal, type AnimalSpec } from '../core/animals';
 import { TAU } from '../core/math';
 import { PHY, type Car } from '../core/physics';
+import type { AccessorySpec } from '../core/shop';
 import type { CarShape, Circle } from '../core/vehicle';
 import { drawAnimalHead, drawAnimalSeated } from './draw-animal';
 import { INK, roundRect } from './shapes';
@@ -22,6 +23,11 @@ export const CAR_COLORS: readonly CarColor[] = [
   { id: 'nopal', body: '#4fae5b', dark: '#357d3f', light: '#def3df' },
   { id: 'mango', body: '#f2c037', dark: '#c08f12', light: '#fdf1c8' },
   { id: 'jacaranda', body: '#8a5cc2', dark: '#62408f', light: '#ece2f8' },
+  // sold in the shop (core/shop.ts)
+  { id: 'turquesa', body: '#1fb5a9', dark: '#15857c', light: '#d4f4f0' },
+  { id: 'arena', body: '#d9b77a', dark: '#a8864c', light: '#f7ecd6' },
+  { id: 'rosa', body: '#e0569c', dark: '#a83a73', light: '#fbe0ee' },
+  { id: 'obsidiana', body: '#3a4047', dark: '#22262a', light: '#dfe4e8' },
 ];
 
 export function carColorById(id: string): CarColor {
@@ -57,6 +63,8 @@ const STEERING = { x: 0.43, y: 0.44 } as const;
 export interface CarLook {
   driver: AnimalSpec;
   color: CarColor;
+  /** Worn by the driver. */
+  accessory?: Readonly<AccessorySpec> | null;
 }
 
 /** Outline of the car body, from the rear bottom corner going forward. */
@@ -191,7 +199,7 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, wheelRot: reado
   ctx.beginPath(); ctx.ellipse(STEERING.x + 0.02, STEERING.y, 0.035, 0.11, 0.35, 0, TAU); ctx.stroke();
 
   // driver's head
-  drawAnimalHead(ctx, look.driver, shape.head.x, shape.head.y, shape.head.r, 1);
+  drawAnimalHead(ctx, look.driver, shape.head.x, shape.head.y, shape.head.r, 1, look.accessory ?? null);
 
   // round decal with a hill on the door
   ctx.strokeStyle = INK; ctx.fillStyle = PARTS.decal; ctx.lineWidth = 0.04;

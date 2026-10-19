@@ -331,3 +331,51 @@ body {
 
 /* iPhone install instructions on the home screen */
 .install-hint { margin: 8px 0 0; color: #fff; font-family: var(--font-body); font-weight: 800; font-size: 12px; line-height: 1.3; -webkit-text-stroke-width: 3px; }
+
+/* Home side buttons in a 2 by 2 grid, so four fit above the play button */
+.home-side { display: grid; grid-template-columns: repeat(2, auto); gap: 8px; }
+
+/* Shop: tabs and a sideways row of item cards */
+.tabs { align-self: center; display: flex; gap: 6px; padding: 4px; background: rgba(31, 58, 52, 0.5); border-radius: 999px; }
+.tab { min-height: 40px; padding: 0 20px; color: #fff; background: transparent; border: 0; border-radius: 999px; font-family: var(--font-display); font-size: 18px; cursor: pointer; }
+.tab.selected { color: var(--ink); background: var(--paper); box-shadow: 0 3px 0 var(--ink); }
+.tab:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.shop-panel { padding: 10px 6px; margin-top: 0; }
+.shop-items { --fade: 18px; display: flex; gap: 12px; margin: 0 calc(-1 * var(--fade)); padding: 6px var(--fade) 10px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--fade); scrollbar-width: none; touch-action: pan-x;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); }
+.shop-items::-webkit-scrollbar { display: none; }
+.shop-card { flex: 0 0 150px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 8px 10px; background: #fff; border: 3px solid var(--ink); border-radius: 18px; box-shadow: 0 5px 0 var(--ink); }
+.shop-card:first-child { margin-left: auto; }
+.shop-card:last-child { margin-right: auto; }
+.shop-card.in-use { background: #fff3dd; border-color: var(--accent-dark); box-shadow: 0 5px 0 var(--accent-dark); }
+.shop-card canvas { width: 100%; height: auto; aspect-ratio: 4 / 3; }
+.shop-name { font-family: var(--font-display); font-size: 17px; line-height: 1.1; text-align: center; text-wrap: balance; }
+.shop-btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; width: 100%; min-height: 40px; padding: 4px 8px; color: var(--ink); background: var(--paper); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); font-family: var(--font-display); font-size: 16px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.shop-btn .coin-icon { width: 18px; height: 18px; }
+.shop-btn.buy { color: #fff; background: var(--accent); text-shadow: 0 2px 0 var(--ink); }
+.shop-btn.in-use { color: #fff; background: var(--teal); text-shadow: 0 2px 0 var(--ink); }
+.shop-btn:disabled { opacity: 0.5; cursor: default; }
+.shop-btn:not(:disabled):active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.shop-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* Challenges: two columns of rows with a progress bar and the reward */
+.challenges-panel { width: min(860px, 100%); }
+.challenge-summary { margin: 0 0 8px; font-family: var(--font-display); font-size: 17px; text-align: center; color: var(--accent-dark); }
+.challenge-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; }
+.challenge { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 10px; padding: 8px 10px; background: #fff; border: 3px solid var(--ink); border-radius: 14px; }
+.challenge-text { font-weight: 800; font-size: 13px; line-height: 1.25; }
+.challenge-reward { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-display); font-size: 16px; font-variant-numeric: tabular-nums; }
+.challenge-reward .coin-icon { width: 18px; height: 18px; }
+.challenge-bar { grid-column: 1 / -1; height: 8px; background: rgba(31, 58, 52, 0.15); border-radius: 4px; overflow: hidden; }
+.challenge-bar i { display: block; height: 100%; background: var(--gold); border-radius: 4px; }
+.challenge.done { background: #f3fbe9; }
+.challenge.done .challenge-bar i { background: var(--leaf); }
+.challenge.done .challenge-text::before { content: ''; display: inline-block; width: 14px; height: 14px; margin-right: 5px; vertical-align: -2px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5l3.5 3.5 7.5-8' fill='none' stroke='%235aa84a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / contain; }
+@media (max-width: 640px) { .challenge-list { grid-template-columns: 1fr; } }
+
+/* Challenges met, on the results card */
+.over-challenges { display: flex; flex-direction: column; gap: 2px; margin: 0 0 10px; padding: 6px 10px; background: #f3fbe9; border: 2px solid var(--leaf); border-radius: 12px; font-weight: 800; font-size: 13px; }
+.over-challenges small { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; }
+.over-challenges b { color: var(--accent-dark); font-family: var(--font-display); font-weight: 400; }
+@media (max-height: 430px) { .shop-card { flex-basis: 136px; padding: 6px 6px 8px; gap: 4px; } .shop-card canvas { aspect-ratio: 16 / 10; } .tab { min-height: 36px; } .challenge { padding: 6px 8px; } }

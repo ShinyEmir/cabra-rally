@@ -415,6 +415,12 @@ Propuesta aceptada por Emir tras cerrar la fase 6: las monedas se juntaban pero 
 - **Retos:** metas cortas que se revisan al terminar cada partida (voltereta doble, distancia, monedas en una partida, tiempo en el aire, caballito largo, niveles de historia, rescatar a todos los amigos). Dan monedas al cumplirse y se avisa en la partida.
 - **Se deja para después:** mejoras del carro que cambien la física, estrellas por nivel, desbloquear conductores con monedas.
 
+**Hecho (2026-10-19):**
+
+- **Retos:** 12 en `CHALLENGES` de `src/core/challenges.ts` (voltereta, voltereta doble, 2 y 3 segundos en el aire, caballito de 3 s, 30 y 100 monedas en una partida, 300 y 800 m en modo libre, 1 y 5 niveles, rescatar a todos los amigos). El texto sale del tipo y la meta (`challengeText`), así que un reto nuevo es solo una línea de datos. Se revisan cada cuadro durante la partida, con aviso "Reto cumplido" y sonido, y al terminar (los de historia). Se pagan una sola vez; se guardan los cumplidos y el mejor valor de cada uno en `cabra-rally-challenges`. Lo ya jugado cuenta: quien ya terminó niveles cobra esos retos al jugar la siguiente partida. Pantalla Retos con barra de progreso, y los retos del recorrido aparecen en los resultados.
+- **Tienda:** solo cosméticos. 6 accesorios (`ACCESSORIES` en `src/core/shop.ts`, dibujados por `src/render/draw-accessory.ts` sobre cualquier animal) y 4 pinturas nuevas (turquesa, arena de playa, rosa mexicano, obsidiana). Comprar descuenta monedas, se guarda en `cabra-rally-shop` y se pone solo; los accesorios se quitan y se ponen, y las pinturas compradas aparecen también en Personajes. El accesorio se ve en el juego, en el inicio, en el perfil y en las vistas previas.
+- **Inicio:** los accesos (Personajes, Tienda, Retos, Historia) quedan en una cuadrícula de 2 por 2.
+
 ### Reglas de trabajo para todas las fases
 
 - Una fase a la vez. No adelantar arte ni menús durante la fase de física.

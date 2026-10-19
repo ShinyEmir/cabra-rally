@@ -1,9 +1,9 @@
 // DOM side of the interface: menu, level select, HUD, floating texts, pause, results and controls.
 import type { TouchButtons } from '../input/pedals';
 import type { ButtonSize, ControlSettings } from '../input/scheme';
-import { bestLine, coinsText, formatNumber, friendsText, metersText, TEXT, type TextKey } from './strings';
+import { bestLine, coinsText, formatNumber, friendsText, metersText, savedCoinsText, TEXT, type TextKey } from './strings';
 
-export type View = 'menu' | 'levels' | 'play' | 'pause' | 'over' | 'controls';
+export type View = 'menu' | 'levels' | 'characters' | 'play' | 'pause' | 'over' | 'controls';
 
 /** Scale of the touch buttons for each size option; large is the original size. */
 const BUTTON_SCALE: Readonly<Record<ButtonSize, number>> = { small: 0.72, medium: 0.85, large: 1 };
@@ -29,6 +29,19 @@ export interface Results {
   story: { won: boolean; friends: number; total: number; hasNext: boolean } | null;
 }
 
+/** What the characters screen shows; painting is done by the caller (the game owns drawing). */
+export interface GarageView {
+  drivers: ReadonlyArray<{ id: string; name: string; trait: string }>;
+  colors: ReadonlyArray<{ id: string; name: string; swatch: string }>;
+  driver: string;
+  color: string;
+  coins: number;
+  paintDriver(canvas: HTMLCanvasElement, id: string): void;
+  paintCar(canvas: HTMLCanvasElement): void;
+  pickDriver(id: string): void;
+  pickColor(id: string): void;
+}
+
 /** One card in the level select screen. */
 export interface LevelCard {
   number: string;
@@ -52,6 +65,10 @@ export class Screens {
   readonly btnStory = byId<HTMLButtonElement>('btnStory');
   readonly btnNext = byId<HTMLButtonElement>('btnNext');
   readonly btnLevelsBack = byId<HTMLButtonElement>('btnLevelsBack');
+  readonly btnCharacters = byId<HTMLButtonElement>('btnCharacters');
+  readonly btnSound = byId<HTMLButtonElement>('btnSound');
+  readonly btnMenuSound = byId<HTMLButtonElement>('btnMenuSound');
+  readonly btnCharactersDone = byId<HTMLButtonElement>('btnCharactersDone');
   readonly btnPause = byId<HTMLButtonElement>('btnPause');
   readonly btnResume = byId<HTMLButtonElement>('btnResume');
   readonly btnQuit = byId<HTMLButtonElement>('btnQuit');
@@ -77,6 +94,12 @@ export class Screens {
   private readonly pauseView = byId('pauseView');
   private readonly controlsView = byId('controlsView');
   private readonly levelsView = byId('levelsView');
+  private readonly charactersView = byId('charactersView');
+  private readonly driverList = byId('driverList');
+  private readonly colorList = byId('colorList');
+  private readonly carPreview = byId<HTMLCanvasElement>('carPreview');
+  private readonly garageCoins = byId('garageCoins');
+  private readonly coinTotal = byId('coinTotal');
   private readonly levelList = byId('levelList');
   private readonly progBox = byId('progBox');
   private readonly progFill = byId('progFill');
@@ -116,6 +139,7 @@ export class Screens {
     this.pauseView.hidden = view !== 'pause';
     this.controlsView.hidden = view !== 'controls';
     this.levelsView.hidden = view !== 'levels';
+    this.charactersView.hidden = view !== 'characters';
     const playing = view === 'play' || view === 'pause';
     this.hud.hidden = !playing;
     // the buttons stay visible behind the controls screen, so changes show live
@@ -198,6 +222,70 @@ export class Screens {
       const list = this.levelList, el = list.children[target] as HTMLElement | undefined;
       if (el) list.scrollLeft = el.offsetLeft - (list.clientWidth - el.offsetWidth) / 2;
     });
+  }
+
+  setMuted(muted: boolean): void {
+    this.btnSound.classList.toggle('muted', muted);
+    this.btnSound.setAttribute('aria-label', muted ? TEXT.unmuteLabel : TEXT.muteLabel);
+    this.btnMenuSound.textContent = muted ? TEXT.soundOff : TEXT.soundOn;
+  }
+
+  /** Saved coins under the menu buttons; hidden while there are none. */
+  setCoinTotal(n: number): void {
+    this.coinTotal.hidden = n <= 0;
+    this.coinTotal.textContent = savedCoinsText(n);
+  }
+
+  /** Fills the characters screen. Call again after a pick to refresh the marks and the preview. */
+  showCharacters(g: GarageView): void {
+    const firstTime = this.driverList.children.length === 0;
+    if (firstTime) {
+      this.driverList.replaceChildren(...g.drivers.map((d) => {
+        const b = document.createElement('button');
+        b.className = 'driver';
+        b.setAttribute('role', 'radio');
+        b.dataset.id = d.id;
+        const canvas = document.createElement('canvas');
+        canvas.width = 220; canvas.height = 190;
+        canvas.setAttribute('aria-hidden', 'true');
+        const name = document.createElement('span');
+        name.className = 'driver-name';
+        name.textContent = d.name;
+        const trait = document.createElement('small');
+        trait.textContent = d.trait;
+        b.append(canvas, name, trait);
+        b.addEventListener('click', () => g.pickDriver(d.id));
+        g.paintDriver(canvas, d.id);
+        return b;
+      }));
+      this.colorList.replaceChildren(...g.colors.map((c) => {
+        const b = document.createElement('button');
+        b.className = 'swatch';
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-label', c.name);
+        b.title = c.name;
+        b.dataset.id = c.id;
+        b.style.setProperty('--swatch', c.swatch);
+        b.addEventListener('click', () => g.pickColor(c.id));
+        return b;
+      }));
+    }
+    for (const el of this.driverList.children) {
+      const on = (el as HTMLElement).dataset.id === g.driver;
+      el.classList.toggle('selected', on); el.setAttribute('aria-checked', String(on));
+    }
+    for (const el of this.colorList.children) {
+      const on = (el as HTMLElement).dataset.id === g.color;
+      el.classList.toggle('selected', on); el.setAttribute('aria-checked', String(on));
+    }
+    this.garageCoins.textContent = savedCoinsText(g.coins);
+    g.paintCar(this.carPreview);
+    if (firstTime) {
+      requestAnimationFrame(() => {
+        const list = this.driverList, el = list.querySelector('.selected') as HTMLElement | null;
+        if (el) list.scrollLeft = el.offsetLeft - (list.clientWidth - el.offsetWidth) / 2;
+      });
+    }
   }
 
   /** Friend counter and progress bar toward the stadium; null hides them (free mode). */

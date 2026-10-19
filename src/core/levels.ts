@@ -15,6 +15,8 @@ export interface LevelSpec {
   seed: number;
   /** Where friends wait, by x. Keep them off the ramps (tests check it). */
   friends: readonly number[];
+  /** Look of the place, by id (render/worlds.ts). */
+  world: string;
 }
 
 export const STORY = {
@@ -25,11 +27,11 @@ export const STORY = {
 } as const;
 
 export const LEVELS: readonly LevelSpec[] = [
-  { id: 'l1', length: 300, amp: 0.75, kickH: 0.7, seed: 0, friends: [45, 95, 140, 185, 230, 268] },
-  { id: 'l2', length: 340, amp: 0.85, kickH: 0.8, seed: 1, friends: [40, 90, 140, 190, 240, 290] },
-  { id: 'l3', length: 380, amp: 0.95, kickH: 0.9, seed: 2, friends: [38, 85, 135, 180, 230, 280, 335] },
-  { id: 'l4', length: 420, amp: 1.05, kickH: 1.0, seed: 3, friends: [42, 92, 140, 190, 240, 290, 335, 378] },
-  { id: 'l5', length: 460, amp: 1.15, kickH: 1.1, seed: 4, friends: [40, 88, 135, 185, 235, 285, 330, 380, 420] },
+  { id: 'l1', length: 300, amp: 0.75, kickH: 0.7, seed: 0, friends: [45, 95, 140, 185, 230, 268], world: 'valle' },
+  { id: 'l2', length: 340, amp: 0.85, kickH: 0.8, seed: 1, friends: [40, 90, 140, 190, 240, 290], world: 'selva' },
+  { id: 'l3', length: 380, amp: 0.95, kickH: 0.9, seed: 2, friends: [38, 85, 135, 180, 230, 280, 335], world: 'costa' },
+  { id: 'l4', length: 420, amp: 1.05, kickH: 1.0, seed: 3, friends: [42, 92, 140, 190, 240, 290, 335, 378], world: 'desierto' },
+  { id: 'l5', length: 460, amp: 1.15, kickH: 1.1, seed: 4, friends: [40, 88, 135, 185, 235, 285, 330, 380, 420], world: 'atardecer' },
 ];
 
 export function storyMode(level: Readonly<LevelSpec>): ModeSpec {
@@ -40,5 +42,6 @@ export function storyMode(level: Readonly<LevelSpec>): ModeSpec {
     coinLookahead: STORY.coinLookahead,
     friends: level.friends,
     finish: { x: level.length, friendBonus: STORY.friendBonus },
+    world: level.world,
   };
 }

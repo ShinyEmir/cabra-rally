@@ -1,8 +1,8 @@
-# Cabra Rally - Plan de desarrollo
+# Cerro Arriba - Plan de desarrollo
 
 Oct 17, 2026 · @Emir Castillo
 
-Cabra Rally (nombre provisional) es un juego 2D de carrito por colinas con personajes de animales originales. Se desarrolla primero en web, sin costo, y después se empaqueta para Android e iOS.
+Cerro Arriba (antes "Cabra Rally", nombre provisional) es un juego 2D de carrito por colinas con personajes de animales originales. Se desarrolla primero en web, sin costo, y después se empaqueta para Android e iOS.
 
 ## Resumen y decisiones
 
@@ -368,6 +368,17 @@ El conductor se elegirá en una pantalla de personajes en una fase posterior. La
 - El audio se activa solo después del primer toque del jugador (regla del navegador) y hay un botón de silencio que se guarda en `localStorage`.
 - La música de fondo queda para una fase posterior, con pistas propias o de licencia libre.
 
+### Implementado en la fase 5 (2026-10-18)
+
+- **Nombre:** Cerro Arriba, en `TEXT.title` de `src/ui/strings.ts`. Los textos ya no mencionan cabras: los amigos son "Amigos".
+- **Reparto:** los 7 animales de la tabla viven como datos en `ANIMALS` de `src/core/animals.ts`. Cada uno combina piezas (orejas, hocico, marcas, cola, cuerpo, ojos), colores y el tamaño de su cabeza, que también es su zona de choque (`carShapeFor` en `src/core/vehicle.ts`). Una sola función los dibuja (`src/render/draw-animal.ts`): la cabeza para el conductor y los pasajeros, el cuerpo de pie para los amigos y la pantalla de personajes. Agregar un animal es agregar datos; solo una pieza nueva necesita código. Nombre y rasgo de cada uno en `ANIMAL_TEXT`. El "accesorio" del `AnimalSpec` queda para la tienda.
+- **Amigos de historia:** todos menos el ajolote, en orden.
+- **Carro propio:** buggy redondeado con barra antivuelco, amortiguadores visibles sobre las ruedas, llantas con taquetes, caja para pasajeros y una calcomanía de cerro. Cuatro colores, ninguno naranja ni rojo: azul laguna (por omisión), verde nopal, amarillo mango y morado jacaranda. Mantiene las medidas de la carrocería, así que la física no cambia.
+- **Mundos:** `WORLDS` en `src/render/worlds.ts`, cada uno con cielo, sol, tres capas de colinas (o mar), suelo, pasto y siluetas: valle (árboles, modo libre y nivel 1), selva (nivel 2), costa con mar y palmeras (nivel 3), desierto con cactus (nivel 4) y atardecer con magueyes (nivel 5). Cada nivel elige su mundo con el campo `world`.
+- **Pantalla de personajes:** desde el menú. Vista previa del carro con el conductor y el color elegidos, fila deslizable con los 7 animales y sus rasgos, y los colores del carro. La elección se guarda en `cabra-rally-garage`; también se muestran las monedas guardadas.
+- **Sonido:** `src/audio/sfx.ts`, todo generado con Web Audio, sin archivos: motor con tono según la velocidad y el gas, moneda, voltereta (una nota más por cada voltereta del salto), tiempo en el aire, aterrizaje limpio, caballito, golpe al aterrizar, choque, recoger amigo y victoria. Arranca con el primer toque o tecla. Botón de silencio en la partida y en el menú, guardado en `cabra-rally-muted`.
+- **Sin rastros del prototipo:** ya no hay cabra ni carro naranja en el juego. La paleta de la interfaz (naranja, verde azulado, crema, tinta) se conserva, como dice la sección de reglas.
+
 ## Fases de trabajo
 
 Son 7 fases en orden. Cada una termina con criterios que se pueden comprobar, y no se pasa a la siguiente hasta cumplirlos. Claude Code debe hacer un commit de Git al cerrar cada fase.
@@ -420,12 +431,12 @@ Las decisiones de la tabla no bloquean las fases 0 a 2. Claude Code debe usar la
 
 | Decisión | Propuesta actual | Se necesita antes de |
 | --- | --- | --- |
-| Nombre definitivo del juego | "Cabra Rally" es provisional y ya no encaja con animales variados. Buscar uno nuevo y revisar que no exista en las tiendas | Fase 5 |
-| Conductor por defecto | Ajolote | Fase 5 |
+| Nombre definitivo del juego | **Decidido el 2026-10-18: Cerro Arriba.** Falta revisar que no exista en las tiendas ni en el registro de marcas antes de publicar. Las claves internas de guardado siguen como `cabra-rally-*` para no borrar el progreso | Fase 5 |
+| Conductor por defecto | Ajolote (hecho en la fase 5) | Fase 5 |
 | Idiomas | Solo español de México al inicio. Dejar los textos en un solo archivo para traducir después | Fase 6 |
 | Orientación | Solo horizontal | Fase 2 |
 | Número de niveles de historia | 5 al lanzar, más después con actualizaciones | Fase 4 |
-| Monedas | Se cuentan y se guardan, sin tienda todavía | Fase 5 |
+| Monedas | Se cuentan y se guardan (hecho en la fase 5, clave `cabra-rally-coins`), sin tienda todavía. Todos los conductores están disponibles desde el inicio | Fase 5 |
 | Anuncios y compras | Ninguno en la primera versión | Después de la fase 6 |
 
 | Riesgo | Qué puede pasar | Qué hacer |
@@ -445,7 +456,7 @@ Para empezar: crear la carpeta del proyecto, guardar este documento como `docs/P
 Guardarlo en la raíz del proyecto. Claude Code lo lee en cada sesión.
 
 ```markdown
-# Proyecto: juego de carrito por colinas (nombre provisional: Cabra Rally)
+# Proyecto: juego de carrito por colinas (nombre: Cerro Arriba)
 
 Lee docs/PLAN.md completo antes de hacer cambios. Es la fuente de decisiones.
 reference/prototype.html es la fuente de verdad del comportamiento.

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#7fcfd0" />
-    <title>Cabra Rally</title>
+    <title>Cerro Arriba</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" />
@@ -22,7 +22,10 @@
           <div class="track"><div id="progFill"></div></div>
         </div>
       </div>
-      <button class="pause" id="btnPause" data-t-label="pause" tabindex="-1"><i></i><i></i></button>
+      <div class="hud-buttons">
+        <button class="pause sound" id="btnSound" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z" /><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" /><path class="cross" d="m16 9 6 6m0-6-6 6" /></svg></button>
+        <button class="pause" id="btnPause" data-t-label="pause" tabindex="-1"><i></i><i></i></button>
+      </div>
     </div>
 
     <div class="pops" id="pops" aria-live="polite"></div>
@@ -47,7 +50,12 @@
           <button class="btn alt" id="btnStory"><span data-t="storyMode"></span><small data-t="storyModeHint"></small></button>
         </div>
         <p class="best" id="bestLine" hidden></p>
-        <button class="link-btn" id="btnControls" data-t="controls"></button>
+        <p class="coin-total" id="coinTotal" hidden></p>
+        <div class="link-row">
+          <button class="link-btn" id="btnCharacters" data-t="characters"></button>
+          <button class="link-btn" id="btnControls" data-t="controls"></button>
+          <button class="link-btn" id="btnMenuSound"></button>
+        </div>
         <p class="how" id="howTo"></p>
         <p class="rotate" data-t="rotateHint"></p>
       </div>
@@ -89,6 +97,27 @@
         <div class="levels" id="levelList"></div>
         <div class="modes spaced">
           <button class="btn ghost" id="btnLevelsBack" data-t="levelsBack"></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="charactersView" hidden>
+      <div class="card">
+        <h2 data-t="characters"></h2>
+        <div class="garage">
+          <div class="garage-car">
+            <canvas id="carPreview" width="260" height="130" aria-hidden="true"></canvas>
+            <p class="setting-label" data-t="carColorLabel"></p>
+            <div class="swatches" id="colorList" role="radiogroup"></div>
+            <p class="coin-total" id="garageCoins"></p>
+          </div>
+          <div class="garage-drivers">
+            <p class="setting-label" data-t="driverLabel"></p>
+            <div class="drivers" id="driverList" role="radiogroup"></div>
+          </div>
+        </div>
+        <div class="modes spaced">
+          <button class="btn" id="btnCharactersDone" data-t="done"></button>
         </div>
       </div>
     </div>

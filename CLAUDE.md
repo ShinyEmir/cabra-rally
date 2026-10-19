@@ -1,4 +1,4 @@
-# Proyecto: juego de carrito por colinas (nombre provisional: Cabra Rally)
+# Proyecto: juego de carrito por colinas (nombre: Cerro Arriba)
 
 Lee docs/PLAN.md completo antes de hacer cambios. Es la fuente de decisiones.
 reference/prototype.html es la fuente de verdad del comportamiento.

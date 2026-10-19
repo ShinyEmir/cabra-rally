@@ -54,8 +54,9 @@ describe('story parity with reference/prototype.html (level 1)', () => {
         expect(run.car, where).toEqual(g.car);
         frames = f + 1;
       }
-      expect(ours).toEqual(proto.pops);
-      console.log(`[historia, ${sc.name}] ${frames} cuadros, estado ${proto.G.state}, x ${proto.G.car.x.toFixed(0)}, puntos ${proto.G.score}, cabritos ${proto.G.friends}, gano ${run.won}`);
+      // the prototype says 'Cabrito a bordo'; the game now names friends without the goat
+      expect(ours).toEqual(proto.pops.map((p) => (p.text === 'Cabrito a bordo' ? { ...p, text: TEXT.friendAboard } : p)));
+      console.log(`[historia, ${sc.name}] ${frames} cuadros, estado ${proto.G.state}, x ${proto.G.car.x.toFixed(0)}, puntos ${proto.G.score}, amigos ${proto.G.friends}, gano ${run.won}`);
     });
   }
 });

@@ -19,6 +19,8 @@ export interface ModeSpec {
   friends: readonly number[];
   /** null for endless runs. */
   finish: Readonly<FinishSpec> | null;
+  /** Look of the place (see render/worlds.ts); unknown ids use the first world. */
+  world: string;
 }
 
 export const FREE_MODE: Readonly<ModeSpec> = {
@@ -28,4 +30,5 @@ export const FREE_MODE: Readonly<ModeSpec> = {
   coinLookahead: 90,
   friends: [],
   finish: null,
+  world: 'valle',
 };

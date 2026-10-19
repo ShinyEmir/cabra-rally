@@ -2,7 +2,7 @@
 // Sliders change PHY and CAMERA live; tried values are kept in localStorage (and only applied
 // while ?ajuste is on), and the panel lists what differs from the defaults so it can be copied.
 import { LEAN, PHY } from '../core/physics';
-import { DEFAULT_CAR_SHAPE } from '../core/vehicle';
+import { DEFAULT_CAR_SHAPE, HITBOX } from '../core/vehicle';
 import { CAMERA } from '../render/camera';
 import { SHAPE_DEBUG } from '../render/draw-car';
 
@@ -43,7 +43,7 @@ const KNOBS: readonly Knob[] = [
   knob('PHY', PHY, 'mu', 'Agarre', 0.5, 2, 0.05),
   knob('PHY', PHY, 'k', 'Suspensión: rigidez', 80, 300, 5),
   knob('PHY', PHY, 'c', 'Suspensión: amortiguación', 4, 25, 0.5),
-  knob('head', DEFAULT_CAR_SHAPE.head, 'r', 'Cabeza: tamaño (zona de choque)', 0.15, 0.45, 0.01),
+  knob('HITBOX', HITBOX, 'headScale', 'Cabeza: tamaño de la zona de choque', 0.5, 1.5, 0.05),
   knob('body', DEFAULT_CAR_SHAPE.body, 'k', 'Carrocería: dureza contra el suelo', 200, 2000, 50),
   knob('body', DEFAULT_CAR_SHAPE.body, 'c', 'Carrocería: amortiguación', 5, 80, 1),
   knob('body', DEFAULT_CAR_SHAPE.body, 'mu', 'Carrocería: fricción al raspar', 0, 1.5, 0.05),

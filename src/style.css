@@ -190,3 +190,46 @@ body {
 /* centers the row when it fits, and still scrolls from the first card when it does not */
 .level:first-child { margin-left: auto; }
 .level:last-child { margin-right: auto; }
+
+/* Menu links and saved coins */
+.link-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.link-row .link-btn { margin: 0; }
+.coin-total { margin: 8px 0 0; font-family: var(--font-display); font-size: 16px; color: var(--accent-dark); font-variant-numeric: tabular-nums; }
+
+/* Characters screen: car preview and paint on one side, a sideways row of drivers on the other */
+#charactersView .card { max-width: 900px; overflow-x: hidden; }
+.garage { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); gap: 14px; margin-top: 8px; text-align: left; }
+.garage-car { display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.garage-car .setting-label, .garage-drivers .setting-label { align-self: stretch; margin-top: 6px; }
+#carPreview { width: 100%; max-width: 260px; height: auto; aspect-ratio: 2 / 1; }
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatch { width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 3px solid var(--ink); background: var(--swatch); box-shadow: 0 3px 0 var(--ink); cursor: pointer; }
+.swatch.selected { outline: 4px solid var(--gold); outline-offset: 2px; }
+.swatch:focus-visible { outline: 4px solid var(--gold); outline-offset: 2px; }
+.garage-drivers { min-width: 0; }
+.drivers { --fade: 16px; position: relative; display: flex; gap: 10px; margin: 0 calc(-1 * var(--fade)); padding: 4px var(--fade) 10px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--fade); scrollbar-width: none; touch-action: pan-x;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); }
+.drivers::-webkit-scrollbar { display: none; }
+.driver { flex: 0 0 124px; scroll-snap-align: start; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 8px 10px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); cursor: pointer; font-family: var(--font-body); text-align: center; }
+.driver canvas { width: 100%; height: auto; aspect-ratio: 220 / 190; }
+.driver .driver-name { font-family: var(--font-display); font-size: 18px; line-height: 1.1; }
+.driver small { font-weight: 700; font-size: 11px; line-height: 1.25; opacity: 0.8; text-wrap: balance; }
+.driver.selected { background: #fff3dd; box-shadow: 0 5px 0 var(--accent-dark); border-color: var(--accent-dark); }
+.driver.selected .driver-name { color: var(--accent); }
+.driver:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.driver:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 560px) { .garage { grid-template-columns: 1fr; } }
+@media (max-height: 430px) {
+  .driver { flex-basis: 108px; padding: 4px 6px 8px; }
+  .driver small { display: none; }
+  #carPreview { max-width: 210px; }
+}
+
+/* HUD buttons: sound and pause */
+.hud-buttons { display: flex; gap: 8px; pointer-events: none; }
+.pause.sound svg { width: 26px; height: 26px; fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.pause.sound .spk { fill: var(--ink); }
+.pause.sound .cross { display: none; }
+.pause.sound.muted .wave { display: none; }
+.pause.sound.muted .cross { display: inline; }

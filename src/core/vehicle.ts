@@ -1,6 +1,7 @@
 // Collision shape of a car with its driver, as data. Each character (phase 5) can bring its own
 // head position and size, extra crash zones (ears, hats) and chassis outline without new code.
 // All positions are in the car's local frame: meters, x forward, y up, origin at the car center.
+import type { AnimalSpec } from './animals';
 import { PHY } from './physics';
 
 // PROTOTYPE_SHAPE (head only, no chassis contact) lives in physics.ts as stepCar's default.
@@ -37,7 +38,7 @@ export interface CarShape {
 }
 
 /**
- * Current car and goat. The body is the rounded box drawn in render/draw-car.ts
+ * The game car with its default driver. The body is the rounded box drawn in render/draw-car.ts
  * (x from -1.35 to 1.35, y from -0.38 to 0.40, corner radius 0.22).
  */
 export const DEFAULT_CAR_SHAPE: Readonly<CarShape> = {
@@ -57,3 +58,14 @@ export const DEFAULT_CAR_SHAPE: Readonly<CarShape> = {
     mu: 0.5,
   },
 };
+
+/** Global multiplier on every driver's head size (tuned from the ?ajuste panel). */
+export const HITBOX = { headScale: 1 };
+
+/** The car with this driver: same chassis, the driver's own head as the crash zone. */
+export function carShapeFor(driver: Readonly<AnimalSpec>): CarShape {
+  return {
+    ...DEFAULT_CAR_SHAPE,
+    head: { x: PHY.headX, y: PHY.headY, r: driver.headR * HITBOX.headScale },
+  };
+}

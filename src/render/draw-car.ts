@@ -2,7 +2,7 @@
 import { TAU } from '../core/math';
 import { PHY, type Car } from '../core/physics';
 import type { CarShape, Circle } from '../core/vehicle';
-import { drawGoatHead } from './draw-animal';
+import { drawGoatHead, friendFur } from './draw-animal';
 import { INK, roundRect } from './shapes';
 
 const CAR = {
@@ -18,7 +18,8 @@ const CAR = {
   driverFur: '#fff1d6',
 } as const;
 
-export function drawCar(ctx: CanvasRenderingContext2D, car: Car, wheelRot: readonly [number, number], shape: Readonly<CarShape>): void {
+/** passengers: friends riding in the bed, in pickup order. */
+export function drawCar(ctx: CanvasRenderingContext2D, car: Car, wheelRot: readonly [number, number], shape: Readonly<CarShape>, passengers = 0): void {
   ctx.save();
   ctx.translate(car.x, car.y); ctx.rotate(car.a);
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -38,6 +39,10 @@ export function drawCar(ctx: CanvasRenderingContext2D, car: Car, wheelRot: reado
       ctx.beginPath(); ctx.moveTo(Math.cos(an) * PHY.r * 0.5, Math.sin(an) * PHY.r * 0.5); ctx.lineTo(-Math.cos(an) * PHY.r * 0.5, -Math.sin(an) * PHY.r * 0.5); ctx.stroke();
     }
     ctx.restore();
+  }
+  // passengers in the bed, three per row
+  for (let p = 0; p < passengers; p++) {
+    drawGoatHead(ctx, -1.05 + (p % 3) * 0.32, 0.5 + Math.floor(p / 3) * 0.28, 0.15, friendFur(p), 0);
   }
   // body
   ctx.fillStyle = CAR.body; ctx.strokeStyle = INK; ctx.lineWidth = 0.06;

@@ -14,12 +14,15 @@ const keys = createKeyboard(window, {
 });
 const game = new Game(ui, keys, touch);
 
-ui.btnFree.addEventListener('click', () => game.startRun());
+ui.btnFree.addEventListener('click', () => game.startFree());
+ui.btnStory.addEventListener('click', () => game.showLevels());
+ui.btnLevelsBack.addEventListener('click', () => game.showMenu());
+ui.btnNext.addEventListener('click', () => game.nextLevel());
 ui.btnRetry.addEventListener('click', () => game.startRun());
-ui.btnMenu.addEventListener('click', () => game.showMenu());
+ui.btnMenu.addEventListener('click', () => game.leaveRun());
 ui.btnPause.addEventListener('click', () => game.setPause(true));
 ui.btnResume.addEventListener('click', () => game.setPause(false));
-ui.btnQuit.addEventListener('click', () => game.showMenu());
+ui.btnQuit.addEventListener('click', () => game.leaveRun());
 ui.btnControls.addEventListener('click', () => game.openControls());
 ui.btnPauseControls.addEventListener('click', () => game.openControls());
 ui.btnControlsDone.addEventListener('click', () => game.closeControls());
@@ -40,6 +43,10 @@ window.addEventListener('contextmenu', (e) => e.preventDefault());
 document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
 
 if (isTuningEnabled()) {
+  // every story level open, for testing
+  game.unlockAll = true;
+  // lets test scripts in the browser read the game state
+  (window as unknown as { cabraDebug: Game }).cabraDebug = game;
   setupTuning({ onChange: () => game.resize(), onOpen: () => game.setPause(true) });
 }
 

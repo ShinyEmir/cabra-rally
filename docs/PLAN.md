@@ -75,6 +75,10 @@ cabra-rally/
       terrain.ts          terrain(x, td), slopeAt(x, td), kickerAt(k, td), TerrainConfig
       scoring.ts          volteretas, aire, caballito, aterrizaje
       modes.ts            Libre e Historia (reglas y parámetros)
+      levels.ts           Niveles de historia como datos
+      progress.ts         Reglas de progreso de historia (desbloqueo, mejores resultados)
+      run.ts              Una partida: paso fijo, monedas, amigos, meta, puntaje
+      vehicle.ts          Forma de choque del carro y el conductor (por personaje)
       rng.ts              hash01 determinista
     render/               Solo dibujo
       draw-world.ts       Fondo, terreno, monedas, estadio
@@ -235,6 +239,25 @@ La configuración del terreno es un objeto `TerrainConfig` con cuatro campos: `a
 - 6 amigos en `x = 45, 95, 140, 185, 230, 268`. Se recogen al acercarse y viajan en la caja. La distancia se mide del centro del carro al punto `(x, terrain(x) + 0.6)` del amigo y debe ser menor que la raíz de 3.4 (unos 1.84 m).
 - Al cruzar la meta: pantalla de victoria y bono de 200 puntos por cada amigo a bordo.
 - Cada nivel futuro cambia `amp`, `kickH`, el largo y la lista de amigos. Eso debe vivir en datos, no en código.
+
+**Implementado en la fase 4 (2026-10-18):**
+
+- Los niveles viven en `LEVELS` de `src/core/levels.ts`. Cada uno tiene `id` (fijo, guarda el progreso), `length`, `amp`, `kickH`, `seed` y `friends`. Agregar un nivel es agregar una entrada; su nombre va en `LEVEL_NAMES` de `src/ui/strings.ts` (si falta, se llama "Nivel N"). La meta queda en `x = length`, el terreno se aplana 40 m antes y el bono es de 200 por amigo, para todos los niveles.
+- `seed` es nuevo (no está en el prototipo): desplaza las tres ondas y la posición de las rampas para que cada nivel tenga colinas propias. Con `seed = 0` el terreno es idéntico al del prototipo.
+- El nivel 1 es el modo historia del prototipo valor por valor, y `tests/story-parity.test.ts` lo compara cuadro por cuadro (puntos, monedas, amigos, textos, estado del carro y del juego).
+
+| Nivel | Nombre | Largo | `amp` | `kickH` | `seed` | Amigos |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Primer paseo | 300 m | 0.75 | 0.7 | 0 | 6 |
+| 2 | Lomas del arroyo | 340 m | 0.85 | 0.8 | 1 | 6 |
+| 3 | Cerro del viento | 380 m | 0.95 | 0.9 | 2 | 7 |
+| 4 | Las barrancas | 420 m | 1.05 | 1.0 | 3 | 8 |
+| 5 | La gran subida | 460 m | 1.15 | 1.1 | 4 | 9 |
+
+- `tests/levels.test.ts` comprueba en cada nivel que los amigos están en orden, antes de la meta y fuera de las rampas, y que un piloto automático lo termina con todos los amigos. El nivel 5 ya no lo termina el piloto que siempre acelera; hace falta uno que afloje antes de las rampas.
+- **Selector de nivel:** el botón Historia abre la lista de niveles. El primero está abierto y cada siguiente se abre al terminar el anterior. El progreso (completado, más amigos y mejor puntaje por nivel) se guarda en `localStorage` con la clave `cabra-rally-story`. Con `?ajuste` o `#ajuste` todos los niveles están abiertos, para probar.
+- **HUD:** contador de amigos y barra de avance hacia el estadio. **Resultados:** "Llegaron al estadio" o "Te volteaste", con los amigos rescatados; al ganar aparece "Siguiente nivel", y el botón de salida regresa a la lista de niveles.
+- Los amigos todavía son las cabras del prototipo ("Cabrito a bordo"); en la fase 5 se reemplazan por los animales del reparto.
 
 ### Puntaje
 

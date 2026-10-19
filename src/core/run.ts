@@ -4,6 +4,7 @@ import { collectCoins, createCoinField, generateCoins, type Coin, type CoinField
 import type { ModeSpec } from './modes';
 import { newCar, PHY, stepCar, type Car } from './physics';
 import { createScoring, updateScoring, type ScoreEvent, type ScoringState } from './scoring';
+import { terrain } from './terrain';
 import { DEFAULT_CAR_SHAPE, type CarShape } from './vehicle';
 
 export const RUN = {
@@ -12,6 +13,22 @@ export const RUN = {
   /** Seconds the car keeps rolling after a crash before the results show. */
   crashDelay: 0.9,
 } as const;
+
+export const FRIENDS = {
+  /** Pickup is measured to this height above the friend's feet. */
+  pickOffsetY: 0.6,
+  /** Squared pickup distance (about 1.84 m). */
+  pickR2: 3.4,
+} as const;
+
+export interface Friend {
+  x: number;
+  /** Ground height where the friend stands. */
+  y: number;
+  got: boolean;
+  /** Order along the level, used to pick its look. */
+  i: number;
+}
 
 /**
  * idle: the car settles with no control (behind the menu).
@@ -29,6 +46,10 @@ export interface Run {
   score: number;
   coins: number;
   field: CoinField;
+  friends: Friend[];
+  friendsAboard: number;
+  /** Crossed the finish line. */
+  won: boolean;
   scoring: ScoringState;
   crashT: number;
   /** Unspent frame time for the fixed physics step. */
@@ -55,10 +76,15 @@ export function pedalsOnly(thr: number): DriveInput {
 export interface FrameEvents {
   score: ScoreEvent[];
   coins: Coin[];
+  friends: Friend[];
   /** The car crashed during this frame. */
   crashed: boolean;
-  /** The crash delay ran out during this frame; the run is over. */
+  /** The run ended during this frame: the crash delay ran out, or the finish line was crossed. */
   finished: boolean;
+  /** The finish line was crossed during this frame (bonus already in the score). */
+  won: boolean;
+  /** Finish bonus added this frame. */
+  bonus: number;
 }
 
 /** acc carries leftover frame time from the previous run, as the prototype does. */
@@ -68,6 +94,8 @@ export function createRun(mode: Readonly<ModeSpec>, phase: 'idle' | 'play', acc 
   if (phase === 'play') generateCoins(field, mode.initialCoinsUpTo, mode.terrain);
   return {
     mode, shape, phase, car, startX: car.x, score: 0, coins: 0, field,
+    friends: mode.friends.map((x, i) => ({ x, y: terrain(x, mode.terrain), got: false, i })),
+    friendsAboard: 0, won: false,
     scoring: createScoring(), crashT: 0, acc, wheelRot: [0, 0],
   };
 }
@@ -91,7 +119,7 @@ function stepOnce(run: Run, input: DriveInput, ev: FrameEvents): void {
 /** Advances the run by one rendered frame of length dt. A number is the classic pedal throttle. */
 export function updateRun(run: Run, dt: number, input: DriveInput | number): FrameEvents {
   const drive = typeof input === 'number' ? pedalsOnly(input) : input;
-  const ev: FrameEvents = { score: [], coins: [], crashed: false, finished: false };
+  const ev: FrameEvents = { score: [], coins: [], friends: [], crashed: false, finished: false, won: false, bonus: 0 };
   if (run.phase === 'over') return ev;
   run.acc += dt;
   let n = 0;
@@ -102,8 +130,22 @@ export function updateRun(run: Run, dt: number, input: DriveInput | number): Fra
     generateCoins(run.field, car.x + run.mode.coinLookahead, run.mode.terrain);
     ev.coins = collectCoins(run.field, car);
     run.coins += ev.coins.length;
+    for (const fr of run.friends) {
+      if (fr.got) continue;
+      const dx = fr.x - car.x, dy = (fr.y + FRIENDS.pickOffsetY) - car.y;
+      if (dx * dx + dy * dy < FRIENDS.pickR2) { fr.got = true; run.friendsAboard++; ev.friends.push(fr); }
+    }
     updateScoring(run.scoring, car, dt, ev.score);
     for (const e of ev.score) run.score += e.points;
+    const finish = run.mode.finish;
+    if (finish && car.x >= finish.x) {
+      ev.bonus = run.friendsAboard * finish.friendBonus;
+      run.score += ev.bonus;
+      run.won = true;
+      run.phase = 'over';
+      ev.finished = true;
+      ev.won = true;
+    }
   }
   if (run.phase === 'crash') {
     run.crashT += dt;

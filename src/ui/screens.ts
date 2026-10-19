@@ -1,9 +1,9 @@
-// DOM side of the interface: menu, HUD, floating score texts, pause, results and controls.
+// DOM side of the interface: menu, level select, HUD, floating texts, pause, results and controls.
 import type { TouchButtons } from '../input/pedals';
 import type { ButtonSize, ControlSettings } from '../input/scheme';
-import { bestLine, coinsText, formatNumber, metersText, TEXT, type TextKey } from './strings';
+import { bestLine, coinsText, formatNumber, friendsText, metersText, TEXT, type TextKey } from './strings';
 
-export type View = 'menu' | 'play' | 'pause' | 'over' | 'controls';
+export type View = 'menu' | 'levels' | 'play' | 'pause' | 'over' | 'controls';
 
 /** Scale of the touch buttons for each size option; large is the original size. */
 const BUTTON_SCALE: Readonly<Record<ButtonSize, number>> = { small: 0.72, medium: 0.85, large: 1 };
@@ -25,6 +25,19 @@ export interface Results {
   distance: number;
   coins: number;
   newBest: boolean;
+  /** Story runs only. */
+  story: { won: boolean; friends: number; total: number; hasNext: boolean } | null;
+}
+
+/** One card in the level select screen. */
+export interface LevelCard {
+  number: string;
+  name: string;
+  facts: string;
+  unlocked: boolean;
+  /** Shown under the facts, for example the best result. */
+  status: string;
+  done: boolean;
 }
 
 export class Screens {
@@ -36,6 +49,9 @@ export class Screens {
     tiltForward: byId('padForward'),
   };
   readonly btnFree = byId<HTMLButtonElement>('btnFree');
+  readonly btnStory = byId<HTMLButtonElement>('btnStory');
+  readonly btnNext = byId<HTMLButtonElement>('btnNext');
+  readonly btnLevelsBack = byId<HTMLButtonElement>('btnLevelsBack');
   readonly btnPause = byId<HTMLButtonElement>('btnPause');
   readonly btnResume = byId<HTMLButtonElement>('btnResume');
   readonly btnQuit = byId<HTMLButtonElement>('btnQuit');
@@ -60,6 +76,11 @@ export class Screens {
   private readonly over = byId('over');
   private readonly pauseView = byId('pauseView');
   private readonly controlsView = byId('controlsView');
+  private readonly levelsView = byId('levelsView');
+  private readonly levelList = byId('levelList');
+  private readonly progBox = byId('progBox');
+  private readonly progFill = byId('progFill');
+  private readonly overExtra = byId('overExtra');
   private readonly howTo = byId('howTo');
   private readonly controlsHow = byId('controlsHow');
   private readonly sideNormalText = byId('sideNormalText');
@@ -79,6 +100,8 @@ export class Screens {
     overScore: byId('overScore'),
     overDist: byId('overDist'),
     overCoins: byId('overCoins'),
+    overFriends: byId('overFriends'),
+    friendTxt: byId('friendTxt'),
   };
 
   constructor() {
@@ -92,6 +115,7 @@ export class Screens {
     this.over.hidden = view !== 'over';
     this.pauseView.hidden = view !== 'pause';
     this.controlsView.hidden = view !== 'controls';
+    this.levelsView.hidden = view !== 'levels';
     const playing = view === 'play' || view === 'pause';
     this.hud.hidden = !playing;
     // the buttons stay visible behind the controls screen, so changes show live
@@ -148,8 +172,41 @@ export class Screens {
     this.set(this.fields.coins, coinsText(coins));
   }
 
+  /** Fills the level select screen; onPick receives the level's position in the list. */
+  showLevels(cards: readonly LevelCard[], onPick: (index: number) => void): void {
+    this.levelList.replaceChildren(...cards.map((c, i) => {
+      const b = document.createElement('button');
+      b.className = 'level' + (c.done ? ' done' : '') + (c.unlocked ? '' : ' locked');
+      b.disabled = !c.unlocked;
+      const num = document.createElement('small');
+      num.textContent = c.number;
+      const name = document.createElement('span');
+      name.className = 'level-name';
+      name.textContent = c.name;
+      const facts = document.createElement('small');
+      facts.textContent = c.facts;
+      const status = document.createElement('em');
+      status.textContent = c.status;
+      b.append(num, name, facts, status);
+      b.addEventListener('click', () => onPick(i));
+      return b;
+    }));
+  }
+
+  /** Friend counter and progress bar toward the stadium; null hides them (free mode). */
+  setStoryHud(story: { friends: number; total: number; progress: number } | null): void {
+    this.progBox.hidden = story === null;
+    if (!story) return;
+    this.set(this.fields.friendTxt, friendsText(story.friends, story.total));
+    this.progFill.style.width = (story.progress * 100).toFixed(1) + '%';
+  }
+
   showResults(r: Results): void {
-    this.set(this.fields.overTitle, TEXT.crashedTitle);
+    this.set(this.fields.overTitle, r.story?.won ? TEXT.wonTitle : TEXT.crashedTitle);
+    this.overExtra.hidden = r.story === null;
+    if (r.story) this.set(this.fields.overFriends, friendsText(r.story.friends, r.story.total));
+    this.btnNext.hidden = !(r.story?.won && r.story.hasNext);
+    this.btnMenu.textContent = r.story ? TEXT.levelsButton : TEXT.menu;
     this.set(this.fields.overScore, formatNumber(r.score));
     this.set(this.fields.overDist, metersText(r.distance));
     this.set(this.fields.overCoins, String(r.coins));

@@ -4,9 +4,10 @@ import { TAU } from '../core/math';
 import type { Run } from '../core/run';
 import { terrain } from '../core/terrain';
 import { CAMERA, type Camera, type Screen } from './camera';
+import { drawFriend } from './draw-animal';
 import { drawCar } from './draw-car';
 import { drawParticles, type Particle } from './particles';
-import { INK } from './shapes';
+import { INK, roundRect } from './shapes';
 
 const SKY = {
   top: '#6fc4cc',
@@ -34,6 +35,19 @@ const GROUND = {
 } as const;
 
 const COIN = { fill: '#f4b92a', shine: '#ffe27a' } as const;
+
+// Generic stadium with no name or crest, as the plan requires.
+const STADIUM = {
+  /** Meters behind the finish line. */
+  behind: 12,
+  tower: '#6d7b78',
+  lights: '#fff3b8',
+  bowl: '#e8dcc0',
+  arches: '#4b5d59',
+  roof: '#2f7f80',
+  flagDark: '#1f3a34',
+  flagLight: '#fff',
+} as const;
 
 function drawHills(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, layer: HillLayer): void {
   const { W, H, S } = scr;
@@ -80,6 +94,42 @@ function drawCoin(ctx: CanvasRenderingContext2D, c: Coin, t: number): void {
   ctx.beginPath(); ctx.ellipse(c.x, c.y + by, sx * 0.5, 0.14, 0, 0, TAU); ctx.fill();
 }
 
+function drawStadium(ctx: CanvasRenderingContext2D, finishX: number, td: Run['mode']['terrain']): void {
+  const x = finishX + STADIUM.behind, y = terrain(x, td);
+  ctx.save(); ctx.translate(x, y);
+  ctx.lineJoin = 'round'; ctx.strokeStyle = INK; ctx.lineWidth = 0.1;
+  // floodlight towers
+  ctx.fillStyle = STADIUM.tower;
+  ctx.fillRect(-9.5, 0, 0.35, 9); ctx.fillRect(9.2, 0, 0.35, 9);
+  ctx.fillStyle = STADIUM.lights;
+  roundRect(ctx, -10.6, 8.6, 2.5, 1.1, 0.2); ctx.fill(); ctx.stroke();
+  roundRect(ctx, 8.1, 8.6, 2.5, 1.1, 0.2); ctx.fill(); ctx.stroke();
+  // bowl
+  ctx.fillStyle = STADIUM.bowl;
+  ctx.beginPath(); ctx.moveTo(-9, 0); ctx.lineTo(-9, 4.4); ctx.quadraticCurveTo(0, 8.4, 9, 4.4); ctx.lineTo(9, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // arches
+  ctx.fillStyle = STADIUM.arches;
+  for (let i = 0; i < 6; i++) {
+    const ax = -7.2 + i * 2.9;
+    ctx.beginPath(); ctx.moveTo(ax, 0); ctx.lineTo(ax, 1.6); ctx.arc(ax + 0.7, 1.6, 0.7, Math.PI, 0); ctx.lineTo(ax + 1.4, 0); ctx.closePath(); ctx.fill();
+  }
+  // roof band
+  ctx.fillStyle = STADIUM.roof;
+  ctx.beginPath(); ctx.moveTo(-9, 4.4); ctx.quadraticCurveTo(0, 8.4, 9, 4.4); ctx.lineTo(9, 3.7); ctx.quadraticCurveTo(0, 7.5, -9, 3.7); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  // finish gate with a checkered banner
+  const gy = terrain(finishX, td);
+  ctx.save(); ctx.translate(finishX, gy);
+  ctx.fillStyle = STADIUM.tower; ctx.strokeStyle = INK; ctx.lineWidth = 0.06;
+  ctx.fillRect(-0.15, 0, 0.3, 4.2);
+  ctx.fillRect(-0.15 + 3.2, 0, 0.3, 4.2);
+  for (let r = 0; r < 2; r++) for (let c = 0; c < 8; c++) {
+    ctx.fillStyle = (r + c) % 2 ? STADIUM.flagDark : STADIUM.flagLight;
+    ctx.fillRect(-0.15 + c * 0.4, 3.9 - r * 0.4, 0.4, 0.4);
+  }
+  ctx.restore();
+}
+
 /** World-space scene. Expects the world transform (meters, y up) to be set. */
 export function drawWorld(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, run: Run, parts: readonly Particle[], t: number): void {
   const { W, H, S } = scr;
@@ -107,11 +157,15 @@ export function drawWorld(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camer
   ctx.strokeStyle = GROUND.grassLight; ctx.lineWidth = 0.28; ctx.stroke(top);
   ctx.restore();
 
+  if (run.mode.finish) drawStadium(ctx, run.mode.finish.x, td);
   for (const c of run.field.items) {
     if (c.got || c.x < x0 || c.x > x1) continue;
     drawCoin(ctx, c, t);
   }
-  drawCar(ctx, run.car, run.wheelRot, run.shape);
+  for (const fr of run.friends) {
+    if (!fr.got && fr.x > x0 && fr.x < x1) drawFriend(ctx, fr.x, fr.y, fr.i, t);
+  }
+  drawCar(ctx, run.car, run.wheelRot, run.shape, run.friendsAboard);
   drawParticles(ctx, parts);
 }
 

@@ -19,6 +19,7 @@ export interface ProtoGame {
     coins: number;
     items: Array<{ x: number; y: number; got: boolean }>;
     acc: number;
+    friends: number;
   };
   keys: { gas: boolean; brake: boolean };
   TD: TerrainConfig;

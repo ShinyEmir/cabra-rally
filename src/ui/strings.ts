@@ -7,7 +7,17 @@ export const TEXT = {
   freeMode: 'Modo libre',
   freeModeHint: 'Infinito. Solo tú y los puntos.',
   storyMode: 'Historia',
-  storyModeHint: 'Muy pronto.',
+  storyModeHint: 'Recoge a los cabritos y llévalos al estadio.',
+  levelsTitle: 'Historia',
+  levelsBack: 'Menú',
+  levelLocked: 'Termina el nivel anterior',
+  levelDone: 'Completado',
+  friendAboard: 'Cabrito a bordo',
+  friendsLabel: 'Cabritos',
+  wonTitle: 'Llegaron al estadio',
+  bonusLabel: 'Bono por cabritos',
+  nextLevel: 'Siguiente nivel',
+  levelsButton: 'Niveles',
   howTo: 'Mantén GAS para avanzar y FRENO para frenar o ir en reversa. En el aire, GAS y FRENO hacen girar el carro. Cada vuelta completa suma puntos. Teclado: flechas o A y D.',
   howToArrows: 'Mantén GAS para avanzar y FRENO para frenar o ir en reversa. Las flechas inclinan el carro: en el aire lo hacen girar y en el suelo ayudan a subir o a hacer caballitos. Cada vuelta completa suma puntos. Teclado: arriba y abajo o W y S para gas y freno; izquierda y derecha o A y D para inclinar.',
   controls: 'Controles',
@@ -61,6 +71,31 @@ export type TextKey = keyof typeof TEXT;
 /** Thousands separator, as in 12,345. */
 export function formatNumber(n: number): string {
   return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+/** Level names by id; a level without one is called by its number. */
+export const LEVEL_NAMES: Readonly<Record<string, string>> = {
+  l1: 'Primer paseo',
+  l2: 'Lomas del arroyo',
+  l3: 'Cerro del viento',
+  l4: 'Las barrancas',
+  l5: 'La gran subida',
+};
+
+export function levelName(id: string, index: number): string {
+  return LEVEL_NAMES[id] ?? 'Nivel ' + (index + 1);
+}
+
+export function levelNumber(index: number): string {
+  return 'Nivel ' + (index + 1);
+}
+
+export function friendsText(got: number, total: number): string {
+  return got + '/' + total;
+}
+
+export function levelFacts(length: number, friends: number): string {
+  return length + ' m · ' + friends + ' cabritos';
 }
 
 export function bestLine(best: number): string {

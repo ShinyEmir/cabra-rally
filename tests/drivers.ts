@@ -29,3 +29,14 @@ export function leveler(tolerance: number): Driver {
 export function jittery(seed: number): (f: number) => number {
   return (f) => Math.min(0.05, 0.004 + hash01(seed * 7919 + f) * 0.056);
 }
+
+/** Like leveler, but coasts instead of accelerating above vcap m/s, to take ramps slower. */
+export function cautious(tolerance: number, vcap: number): Driver {
+  return (_f, car) => {
+    if (car.air > 0) {
+      const a = angNorm(car.a);
+      return a > tolerance ? -1 : a < -tolerance ? 1 : 0;
+    }
+    return Math.hypot(car.vx, car.vy) > vcap ? 0 : 1;
+  };
+}

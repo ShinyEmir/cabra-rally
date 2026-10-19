@@ -12,7 +12,15 @@ export interface TerrainConfig {
   kickH: number;
   /** The terrain flattens out over 20 m starting at this x. */
   flatFrom: number;
+  /**
+   * Shifts the hill waves and the ramp placement so each story level has its own ground.
+   * 0 or missing gives the prototype's terrain exactly. Not in the prototype.
+   */
+  seed?: number;
 }
+
+/** How much one unit of seed shifts each wave (radians) and the ramp hash. */
+const SEED_SHIFT = { wave1: 1.3, wave2: 2.1, wave3: 0.7, ramps: 37 } as const;
 
 /** Prototype defaults (TD), which are also the free mode settings. */
 export const DEFAULT_TERRAIN: Readonly<TerrainConfig> = { amp: 1, kick: 1, kickH: 1, flatFrom: 1e9 };
@@ -23,7 +31,7 @@ export interface Kicker {
 }
 
 export function kickerAt(k: number, td: Readonly<TerrainConfig> = DEFAULT_TERRAIN): Kicker {
-  const xc = 60 + k * 48 + hash01(k) * 14;
+  const xc = 60 + k * 48 + hash01(k + (td.seed ?? 0) * SEED_SHIFT.ramps) * 14;
   const H = (1.5 + Math.min(1.7, k * 0.15)) * td.kickH;
   return { xc: xc, H: H };
 }
@@ -32,7 +40,8 @@ export function terrain(x: number, td: Readonly<TerrainConfig> = DEFAULT_TERRAIN
   const f = smooth((x - 8) / 24);
   const ramp = clamp((x - 20) / 260, 0, 1);
   const A = (0.45 + 1.35 * ramp) * td.amp;
-  let h = A * (Math.sin(x * 0.11) + 0.45 * Math.sin(x * 0.27 + 1.7) + 0.15 * Math.sin(x * 0.61 + 0.4)) * f;
+  const s = td.seed ?? 0;
+  let h = A * (Math.sin(x * 0.11 + s * SEED_SHIFT.wave1) + 0.45 * Math.sin(x * 0.27 + 1.7 + s * SEED_SHIFT.wave2) + 0.15 * Math.sin(x * 0.61 + 0.4 + s * SEED_SHIFT.wave3)) * f;
   if (td.kick > 0 && x > 50) {
     const k = Math.floor((x - 53) / 48);
     if (k >= 0) {

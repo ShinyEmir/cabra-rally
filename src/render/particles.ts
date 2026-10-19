@@ -66,3 +66,10 @@ export function drawParticles(ctx: CanvasRenderingContext2D, parts: readonly Par
   }
   ctx.globalAlpha = 1;
 }
+
+/** White puff when a friend jumps on board. */
+export function friendBurst(parts: Particle[], x: number, y: number): void {
+  for (let s = 0; s < 8; s++) {
+    parts.push({ x, y: y + 0.8, vx: (Math.random() - 0.5) * 5, vy: Math.random() * 5, life: 0.5, max: 0.5, r: 0.1, col: '#fff' });
+  }
+}

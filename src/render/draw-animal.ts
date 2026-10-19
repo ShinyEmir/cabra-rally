@@ -34,3 +34,32 @@ export function drawGoatHead(ctx: CanvasRenderingContext2D, cx: number, cy: numb
   ctx.fillStyle = fur;
   ctx.beginPath(); ctx.moveTo(cx + 0.12 * u, cy - 0.17 * u); ctx.lineTo(cx + 0.2 * u, cy - 0.36 * u); ctx.lineTo(cx + 0.27 * u, cy - 0.17 * u); ctx.closePath(); ctx.fill(); ctx.stroke();
 }
+
+/** Fur colors for the friends, picked by their order along the level. */
+export const FRIEND_FUR = ['#fff1d6', '#ead9b9', '#d8c3a2', '#f3e0e0', '#d3dcd7', '#f5d9a8'] as const;
+
+export function friendFur(i: number): string {
+  return FRIEND_FUR[i % FRIEND_FUR.length];
+}
+
+const FRIEND = { legs: '#7a5a40' } as const;
+
+/** A friend waiting by the road, bobbing and waving. (x, y) is where its feet touch the ground. */
+export function drawFriend(ctx: CanvasRenderingContext2D, x: number, y: number, i: number, t: number): void {
+  const bob = Math.abs(Math.sin(t * 5 + x)) * 0.1;
+  ctx.save(); ctx.translate(x, y + bob);
+  const fur = friendFur(i);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.strokeStyle = INK; ctx.lineWidth = 0.05; ctx.fillStyle = fur;
+  // legs
+  ctx.fillStyle = FRIEND.legs;
+  ctx.fillRect(-0.28, -bob, 0.1, 0.4); ctx.fillRect(0.2, -bob, 0.1, 0.4);
+  ctx.fillStyle = fur;
+  ctx.beginPath(); ctx.ellipse(0, 0.55, 0.44, 0.27, 0, 0, TAU); ctx.fill(); ctx.stroke();
+  // waving arm
+  ctx.strokeStyle = fur; ctx.lineWidth = 0.1;
+  const wv = Math.sin(t * 8 + x) * 0.25;
+  ctx.beginPath(); ctx.moveTo(0.15, 0.7); ctx.lineTo(0.3 + wv * 0.2, 1.1 + wv * 0.2); ctx.stroke();
+  drawGoatHead(ctx, 0.36, 0.95, 0.22, fur, 1);
+  ctx.restore();
+}

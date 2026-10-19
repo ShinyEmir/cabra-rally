@@ -403,7 +403,17 @@ Son 7 fases en orden. Cada una termina con criterios que se pueden comprobar, y 
 | 5. Personajes y arte | Animales originales, `AnimalSpec`, carro propio, fondos por mundo, pantalla de personajes, sonido | No queda ningún elemento del prototipo original (cabra, carro naranja). `CREDITS.md` completo |
 | 6. Publicación web | PWA instalable, hosting gratis, dominio de prueba | Se instala desde el navegador del teléfono, abre sin internet y pasa Lighthouse con 90 o más en rendimiento y PWA |
 
+| 7. Retos y tienda | Darle uso a las monedas: tienda de accesorios y pinturas, y retos que dan monedas | Hay al menos 10 retos con progreso guardado y aviso al cumplirlos; la tienda vende al menos 6 accesorios y 3 pinturas; lo comprado se guarda y se ve en el juego; todo se agrega editando datos |
+
 Después de la fase 6 se decide, con el juego ya probado por otras personas, si se empaqueta para tiendas (ver la sección de publicación).
+
+### Fase 7: retos y tienda (agregada el 2026-10-19)
+
+Propuesta aceptada por Emir tras cerrar la fase 6: las monedas se juntaban pero no servían para nada.
+
+- **Tienda:** solo cosméticos, sin afectar la física ni la dificultad. Accesorios que se ven sobre el conductor (sombrero, lentes, paliacate, gorra, corona de flores, moño), definidos como datos y dibujados por una sola función, y pinturas nuevas para el carro. Se compran una vez con monedas y se equipan.
+- **Retos:** metas cortas que se revisan al terminar cada partida (voltereta doble, distancia, monedas en una partida, tiempo en el aire, caballito largo, niveles de historia, rescatar a todos los amigos). Dan monedas al cumplirse y se avisa en la partida.
+- **Se deja para después:** mejoras del carro que cambien la física, estrellas por nivel, desbloquear conductores con monedas.
 
 ### Reglas de trabajo para todas las fases
 
@@ -430,6 +440,7 @@ El juego sale primero como web gratuita e instalable, y solo después se evalúa
 - **Instalar:** botón "Instalar" en el inicio cuando Chrome lo permite (Android y computadora); en iPhone, una línea con los dos toques (Compartir y luego Agregar a pantalla de inicio). Nada de esto aparece si el juego ya está instalado.
 - **Rutas relativas** (`base: './'`): el mismo build funciona en la raíz de un dominio o en una subcarpeta.
 - **Publicación:** `.github/workflows/deploy.yml` prueba y compila en cada push a `main` y publica en GitHub Pages. Mientras el repositorio sea privado, el paso de publicar se salta. Para activarlo, Emir hace público el repositorio y en Settings > Pages elige "GitHub Actions"; el enlace queda como `https://shinyemir.github.io/cabra-rally/`. Si prefiere dejarlo privado: Cloudflare Pages o Netlify con comando `npm run build` y carpeta `dist`.
+- **Fase 6 cerrada el 2026-10-19.** El juego está en línea en `https://shinyemir.github.io/cabra-rally/`; Emir lo instaló en su teléfono y funciona. Cada push a `main` corre pruebas y build y solo publica si todo pasa; si algo falla, el sitio se queda con la última versión buena.
 - **Lighthouse 13.5** (versión de producción, simulación de teléfono): rendimiento 98 a 99, accesibilidad 100, buenas prácticas 100, SEO 100. Lighthouse 12 y posteriores ya no tienen la categoría "PWA"; la instalabilidad se comprobó a mano (manifiesto válido, íconos, service worker activo que controla la página). Para pasar de 87 a 98 se cargaron las fuentes sin bloquear el primer dibujado y se agregó `robots.txt`.
 
 ### Etapa 2: tiendas (solo si el juego lo amerita)

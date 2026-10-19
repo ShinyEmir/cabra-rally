@@ -102,6 +102,7 @@
         <h2 id="overTitle"></h2>
         <div class="big" id="overScore">0</div>
         <div class="label" data-t="pointsLabel"></div>
+        <div class="over-stars" id="overStars" hidden></div>
         <div class="rows">
           <span><small data-t="distanceLabel"></small><b id="overDist">0 m</b></span>
           <span><small data-t="coinsLabel"></small><b id="overCoins">0</b></span>
@@ -132,7 +133,7 @@
       <div class="topbar">
         <button class="back-pill" id="btnLevelsBack"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5 8 12l7 7" /></svg><span data-t="modes"></span></button>
         <h2 class="screen-title stroke" data-t="levelsTitle"></h2>
-        <div class="topbar-right"><div class="coin-pill"><i class="coin-icon" aria-hidden="true"></i><span id="levelsCoins">0</span></div></div>
+        <div class="topbar-right"><div class="coin-pill star-pill" role="group" data-t-label="starsLabel"><svg class="star on" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.2l-6.1 3.5 1.5-6.8-5.2-4.7 6.9-.7z" /></svg><span id="levelsStars">0/0</span></div><div class="coin-pill"><i class="coin-icon" aria-hidden="true"></i><span id="levelsCoins">0</span></div></div>
       </div>
       <div class="panel">
         <div class="levels" id="levelList"></div>

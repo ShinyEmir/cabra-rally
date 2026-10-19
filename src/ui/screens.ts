@@ -3,7 +3,7 @@
 // caller through paint callbacks, because the game owns the drawing code.
 import type { TouchButtons } from '../input/pedals';
 import type { ButtonSize, ControlSettings } from '../input/scheme';
-import { bestLine, coinsText, formatNumber, freeBestText, friendsText, metersText, storyProgressText, TEXT, type TextKey } from './strings';
+import { bestLine, coinsText, formatNumber, freeBestText, friendsText, metersText, starsText, storyProgressText, TEXT, type TextKey } from './strings';
 
 export type View = 'menu' | 'modes' | 'levels' | 'characters' | 'shop' | 'challenges' | 'play' | 'pause' | 'over' | 'controls';
 
@@ -44,6 +44,21 @@ const POPS = {
   lifeMs: 1300,
 } as const;
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const STAR_PATH = 'M12 2.2l2.9 6.3 6.9.7-5.2 4.7 1.5 6.8L12 17.2l-6.1 3.5 1.5-6.8-5.2-4.7 6.9-.7z';
+
+/** A star drawn in SVG, filled when earned. */
+function starIcon(on: boolean): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.classList.add('star', on ? 'on' : 'off');
+  const path = document.createElementNS(SVG_NS, 'path');
+  path.setAttribute('d', STAR_PATH);
+  svg.append(path);
+  return svg;
+}
+
 function byId<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id);
   if (!el) throw new Error(`missing element #${id}`);
@@ -58,9 +73,17 @@ export interface Results {
   coins: number;
   newBest: boolean;
   /** Story runs only. */
-  story: { won: boolean; friends: number; total: number; hasNext: boolean } | null;
+  story: { won: boolean; friends: number; total: number; hasNext: boolean; stars: readonly StarLine[] } | null;
   /** Challenges met during this run, already worded. */
   challenges: ReadonlyArray<{ text: string; reward: number }>;
+}
+
+/** One of a level's stars in the results: what it asks for and whether it is earned. */
+export interface StarLine {
+  text: string;
+  on: boolean;
+  /** Earned in this run for the first time. */
+  isNew: boolean;
 }
 
 export interface HomeView {
@@ -72,6 +95,8 @@ export interface HomeView {
 export interface ModesView {
   levelsDone: number;
   levelsTotal: number;
+  stars: number;
+  starsTotal: number;
   best: number;
   paintStory: Painter;
   paintFree: Painter;
@@ -103,6 +128,10 @@ export interface LevelCard {
   done: boolean;
   /** Sky and hill colors of the level's world, for the band on top of the card. */
   tint: readonly [string, string];
+  /** Earned stars, in order; empty for locked levels. */
+  stars: readonly boolean[];
+  /** What the stars ask for, read aloud and shown on hover. */
+  goals: string;
 }
 
 /** Sizes a canvas to its displayed size times the device pixel ratio, for crisp drawings. */
@@ -188,6 +217,8 @@ export class Screens {
   /** The last garage shown, so the carousel arrows know where to go. */
   private garage: GarageView | null = null;
   private readonly levelList = byId('levelList');
+  private readonly levelsStars = byId('levelsStars');
+  private readonly overStars = byId('overStars');
   private readonly progBox = byId('progBox');
   private readonly progFill = byId('progFill');
   private readonly overExtra = byId('overExtra');
@@ -358,7 +389,7 @@ export class Screens {
 
   /** Fills the mode select screen. Call after show('modes') so the drawings get their real size. */
   showModes(m: ModesView): void {
-    this.modes.progress.textContent = storyProgressText(m.levelsDone, m.levelsTotal);
+    this.modes.progress.textContent = storyProgressText(m.levelsDone, m.levelsTotal, m.stars, m.starsTotal);
     this.modes.best.textContent = freeBestText(m.best);
     fitCanvas(this.modes.story); m.paintStory(this.modes.story);
     fitCanvas(this.modes.free); m.paintFree(this.modes.free);
@@ -371,7 +402,8 @@ export class Screens {
   }
 
   /** Fills the level select screen; onPick receives the level's position in the list. */
-  showLevels(cards: readonly LevelCard[], onPick: (index: number) => void): void {
+  showLevels(cards: readonly LevelCard[], stars: { got: number; total: number }, onPick: (index: number) => void): void {
+    this.levelsStars.textContent = starsText(stars.got, stars.total);
     this.levelList.replaceChildren(...cards.map((c, i) => {
       const b = document.createElement('button');
       b.className = 'level' + (c.done ? ' done' : '') + (c.unlocked ? '' : ' locked');
@@ -388,7 +420,11 @@ export class Screens {
       const band = document.createElement('i');
       band.className = 'level-band';
       band.style.background = `linear-gradient(180deg, ${c.tint[0]} 0 55%, ${c.tint[1]} 55%)`;
-      b.append(band, num, name, facts, status);
+      const row = document.createElement('span');
+      row.className = 'level-stars';
+      row.append(...c.stars.map((on) => starIcon(on)));
+      if (c.goals) { b.title = c.goals; b.setAttribute('aria-label', c.number + ', ' + c.name + '. ' + c.facts + '. ' + c.goals); }
+      b.append(band, num, name, facts, row, status);
       b.addEventListener('click', () => onPick(i));
       return b;
     }));
@@ -458,6 +494,20 @@ export class Screens {
     this.overExtra.hidden = r.story === null;
     if (r.story) this.set(this.fields.overFriends, friendsText(r.story.friends, r.story.total));
     this.btnNext.hidden = !(r.story?.won && r.story.hasNext);
+    this.overStars.hidden = r.story === null;
+    this.overStars.replaceChildren(...(r.story?.stars ?? []).map((st) => {
+      const item = document.createElement('span');
+      item.className = 'over-star' + (st.on ? ' on' : '') + (st.isNew ? ' new' : '');
+      const caption = document.createElement('small');
+      caption.textContent = st.text;
+      item.append(starIcon(st.on), caption);
+      if (st.isNew) {
+        const badge = document.createElement('b');
+        badge.textContent = TEXT.newStar;
+        item.append(badge);
+      }
+      return item;
+    }));
     this.btnMenu.textContent = r.story ? TEXT.levelsButton : TEXT.home;
     this.set(this.fields.overScore, formatNumber(r.score));
     this.set(this.fields.overDist, metersText(r.distance));

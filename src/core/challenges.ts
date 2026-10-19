@@ -8,7 +8,8 @@ export type ChallengeKind =
   | 'jumpTime' // seconds of a single jump
   | 'wheelieTime' // seconds of a single wheelie
   | 'levelsDone' // story levels finished
-  | 'allFriends'; // story levels finished with every friend on board
+  | 'allFriends' // story levels finished with every friend on board
+  | 'stars'; // stars earned across the story levels
 
 export interface ChallengeSpec {
   /** Stable id, used to save progress. Never reuse or rename one. */
@@ -32,6 +33,10 @@ export const CHALLENGES: readonly ChallengeSpec[] = [
   { id: 'dist800', kind: 'freeDistance', target: 800, reward: 300 },
   { id: 'coins100', kind: 'coinsInRun', target: 100, reward: 300 },
   { id: 'level5', kind: 'levelsDone', target: 5, reward: 500 },
+  { id: 'stars10', kind: 'stars', target: 10, reward: 300 },
+  { id: 'stars20', kind: 'stars', target: 20, reward: 600 },
+  { id: 'level10', kind: 'levelsDone', target: 10, reward: 800 },
+  { id: 'stars30', kind: 'stars', target: 30, reward: 1000 },
 ];
 
 /** What a run has achieved so far, plus story totals. */
@@ -46,6 +51,8 @@ export interface ChallengeContext {
   levelsDone: number;
   /** Story levels finished with every friend, counting this run. */
   levelsWithAllFriends: number;
+  /** Stars across the story levels, counting this run. */
+  stars: number;
 }
 
 export interface ChallengeProgress {
@@ -64,7 +71,13 @@ export function challengeValue(spec: Readonly<ChallengeSpec>, ctx: Readonly<Chal
     case 'wheelieTime': return ctx.maxWheelie;
     case 'levelsDone': return ctx.levelsDone;
     case 'allFriends': return ctx.levelsWithAllFriends;
+    case 'stars': return ctx.stars;
   }
+}
+
+/** Story totals come from saved progress, so they count even before the challenge is checked. */
+export function isStoryTotal(kind: ChallengeKind): boolean {
+  return kind === 'levelsDone' || kind === 'allFriends' || kind === 'stars';
 }
 
 /** Records the best values and returns the challenges met for the first time. */

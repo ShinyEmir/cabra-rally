@@ -6,7 +6,7 @@ import { ACCESSORIES, buy, EMPTY_SHOP, equipAccessory, sanitizeShop, SHOP_ITEMS 
 import { challengeText } from '../src/ui/strings';
 import { holdGas, leveler } from './drivers';
 
-const NOTHING: ChallengeContext = { mode: 'free', distance: 0, coins: 0, maxFlips: 0, maxJump: 0, maxWheelie: 0, levelsDone: 0, levelsWithAllFriends: 0 };
+const NOTHING: ChallengeContext = { mode: 'free', distance: 0, coins: 0, maxFlips: 0, maxJump: 0, maxWheelie: 0, levelsDone: 0, levelsWithAllFriends: 0, stars: 0 };
 
 describe('challenges', () => {
   it('has at least 10 challenges with unique ids and positive rewards', () => {

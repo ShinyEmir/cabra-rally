@@ -391,7 +391,7 @@ El conductor se elegirá en una pantalla de personajes en una fase posterior. La
 
 ## Fases de trabajo
 
-Son 7 fases en orden. Cada una termina con criterios que se pueden comprobar, y no se pasa a la siguiente hasta cumplirlos. Claude Code debe hacer un commit de Git al cerrar cada fase.
+Son 9 fases en orden (las fases 7 y 8 se agregaron después de publicar). Cada una termina con criterios que se pueden comprobar, y no se pasa a la siguiente hasta cumplirlos. Claude Code debe hacer un commit de Git al cerrar cada fase.
 
 | Fase | Objetivo | Se considera terminada cuando |
 | --- | --- | --- |
@@ -402,8 +402,8 @@ Son 7 fases en orden. Cada una termina con criterios que se pueden comprobar, y 
 | 4. Modo historia | Niveles basados en datos, amigos, estadio genérico, pantalla de victoria y selector de nivel | Al menos 5 niveles jugables y completables. Un nivel nuevo se agrega solo editando datos |
 | 5. Personajes y arte | Animales originales, `AnimalSpec`, carro propio, fondos por mundo, pantalla de personajes, sonido | No queda ningún elemento del prototipo original (cabra, carro naranja). `CREDITS.md` completo |
 | 6. Publicación web | PWA instalable, hosting gratis, dominio de prueba | Se instala desde el navegador del teléfono, abre sin internet y pasa Lighthouse con 90 o más en rendimiento y PWA |
-
 | 7. Retos y tienda | Darle uso a las monedas: tienda de accesorios y pinturas, y retos que dan monedas | Hay al menos 10 retos con progreso guardado y aviso al cumplirlos; la tienda vende al menos 6 accesorios y 3 pinturas; lo comprado se guarda y se ve en el juego; todo se agrega editando datos |
+| 8. Más niveles y estrellas | Niveles 6 a 10 con mundos nuevos y tres estrellas por nivel para volver a jugarlos | Hay 10 niveles completables con todos los amigos (comprobado por pruebas), cada uno con su mundo; cada nivel da hasta 3 estrellas que se ven en la lista y en los resultados; las estrellas cuentan para retos; lo jugado antes da sus estrellas sin volver a jugar |
 
 Después de la fase 6 se decide, con el juego ya probado por otras personas, si se empaqueta para tiendas (ver la sección de publicación).
 
@@ -420,6 +420,24 @@ Propuesta aceptada por Emir tras cerrar la fase 6: las monedas se juntaban pero 
 - **Retos:** 12 en `CHALLENGES` de `src/core/challenges.ts` (voltereta, voltereta doble, 2 y 3 segundos en el aire, caballito de 3 s, 30 y 100 monedas en una partida, 300 y 800 m en modo libre, 1 y 5 niveles, rescatar a todos los amigos). El texto sale del tipo y la meta (`challengeText`), así que un reto nuevo es solo una línea de datos. Se revisan cada cuadro durante la partida, con aviso "Reto cumplido" y sonido, y al terminar (los de historia). Se pagan una sola vez; se guardan los cumplidos y el mejor valor de cada uno en `cabra-rally-challenges`. Lo ya jugado cuenta: quien ya terminó niveles cobra esos retos al jugar la siguiente partida. Pantalla Retos con barra de progreso, y los retos del recorrido aparecen en los resultados.
 - **Tienda:** solo cosméticos. 6 accesorios (`ACCESSORIES` en `src/core/shop.ts`, dibujados por `src/render/draw-accessory.ts` sobre cualquier animal) y 4 pinturas nuevas (turquesa, arena de playa, rosa mexicano, obsidiana). Comprar descuenta monedas, se guarda en `cabra-rally-shop` y se pone solo; los accesorios se quitan y se ponen, y las pinturas compradas aparecen también en Personajes. El accesorio se ve en el juego, en el inicio, en el perfil y en las vistas previas.
 - **Inicio:** los accesos (Personajes, Tienda, Retos, Historia) quedan en una cuadrícula de 2 por 2.
+- **Fase 7 cerrada el 2026-10-19.** Emir probó la tienda y los retos en el sitio publicado y todo funciona.
+
+### Fase 8: más niveles y estrellas (agregada el 2026-10-19)
+
+Siguiente paso propuesto tras la fase 7: con 5 niveles el modo historia se acaba rápido y no hay motivo para repetir un nivel ya terminado.
+
+- **Niveles 6 a 10:** más largos, con colinas y rampas más altas, cada uno con una semilla de terreno que las pruebas comprueban que se puede terminar con todos los amigos. Siguen desbloqueándose en orden.
+- **Mundos nuevos:** sierra con pinos y picos, milpas, pueblo de noche (luna, estrellas y casas con luz), paso nevado y faldas del volcán. Cada uno es datos en `WORLDS`, más el código de su silueta.
+- **Estrellas:** tres por nivel: llegar al estadio, llegar con todos los amigos y alcanzar el puntaje meta del nivel (dato `scoreGoal`, que pide hacer trucos además de llevar a los amigos). Se calculan con el progreso ya guardado (mejor puntaje y más amigos), así que no hay clave nueva y lo jugado antes cuenta. Se ven en cada tarjeta, el total en la lista y en Modos, y en los resultados se marcan las nuevas.
+- **Retos nuevos:** juntar estrellas y terminar los 10 niveles.
+- **Se deja para después:** obstáculos nuevos en el terreno, mejoras del carro que cambien la física, desbloquear niveles con estrellas.
+
+**Hecho (2026-10-19):**
+
+- **Niveles 6 a 10** en `LEVELS`: Pinos de la sierra (500 m, 10 amigos), Entre milpas (540 m, 10), Pueblo de noche (580 m, 11), Paso nevado (620 m, 12) y Faldas del volcán (660 m, 13). Colinas de 1.2 a 1.4 y rampas de 1.15 a 1.35. Las semillas se eligieron probando muchas con los pilotos automáticos de las pruebas; se quedaron las que se terminan con todos los amigos. La física no cambió.
+- **Mundos:** `far` en `WorldSpec` elige la capa lejana (colinas, mar, picos o volcán); `night` pone estrellas que parpadean y luna; `snow` pinta la punta de los picos; `propLight` es el segundo color de las siluetas (ventanas encendidas, elotes, nieve en los pinos). Siluetas nuevas: pino, milpa, casa y piedras. El volcán echa humo.
+- **Estrellas** (`src/core/stars.ts`): llegar, llegar con todos los amigos y `scoreGoal` (de 1,700 en el nivel 1 a 4,000 en el 10). Una prueba comprueba que manejar con cuidado no alcanza la meta de puntos: hay que hacer trucos. Tarjetas con sus tres estrellas y el récord, total en la lista de niveles y en Modos, y en los resultados las tres metas con las nuevas marcadas.
+- **Retos nuevos:** 10, 20 y 30 estrellas, y terminar los 10 niveles (16 retos en total).
 
 ### Reglas de trabajo para todas las fases
 
@@ -471,7 +489,7 @@ Las decisiones de la tabla no bloquean las fases 0 a 2. Claude Code debe usar la
 | Conductor por defecto | Ajolote (hecho en la fase 5) | Fase 5 |
 | Idiomas | Solo español de México al inicio. Dejar los textos en un solo archivo para traducir después | Fase 6 |
 | Orientación | Solo horizontal | Fase 2 |
-| Número de niveles de historia | 5 al lanzar, más después con actualizaciones | Fase 4 |
+| Número de niveles de historia | 5 al lanzar; 10 desde la fase 8 | Fase 4 |
 | Monedas | Se cuentan y se guardan (hecho en la fase 5, clave `cabra-rally-coins`), sin tienda todavía. Todos los conductores están disponibles desde el inicio | Fase 5 |
 | Anuncios y compras | Ninguno en la primera versión | Después de la fase 6 |
 

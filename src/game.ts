@@ -5,7 +5,8 @@ import { LEVELS, storyMode } from './core/levels';
 import { clamp } from './core/math';
 import { FREE_MODE, type ModeSpec } from './core/modes';
 import { isUnlocked, recordWin, sanitizeProgress, type StoryProgress } from './core/progress';
-import { CHALLENGES, challengeValue, sanitizeChallenges, updateChallenges, type ChallengeContext, type ChallengeProgress } from './core/challenges';
+import { CHALLENGES, challengeValue, isStoryTotal, sanitizeChallenges, updateChallenges, type ChallengeContext, type ChallengeProgress } from './core/challenges';
+import { countStars, levelStars, STARS_PER_LEVEL } from './core/stars';
 import { accessoryById, buy, equipAccessory, isOwned, sanitizeShop, SHOP_ITEMS, type ShopState } from './core/shop';
 import { newCar } from './core/physics';
 import { carShapeFor } from './core/vehicle';
@@ -22,7 +23,7 @@ import { renderFrame, type SceneLook } from './render/draw-world';
 import { worldById } from './render/worlds';
 import { coinBurst, emitDriving, friendBurst, updateParticles, type Particle } from './render/particles';
 import type { Screens, View } from './ui/screens';
-import { ACCESSORY_NAMES, animalText, CAR_COLOR_NAMES, challengesSummaryText, challengeText, describeScore, friendsText, levelFacts, levelName, levelNumber, TEXT } from './ui/strings';
+import { ACCESSORY_NAMES, animalText, CAR_COLOR_NAMES, challengesSummaryText, challengeText, describeScore, formatNumber, levelFacts, levelName, levelNumber, starGoalTexts, TEXT } from './ui/strings';
 
 export type GameState = 'menu' | 'play' | 'paused' | 'crash' | 'over';
 
@@ -208,6 +209,8 @@ export class Game {
     this.ui.showModes({
       levelsDone: LEVELS.filter((l) => this.progress[l.id]?.done).length,
       levelsTotal: LEVELS.length,
+      stars: countStars(LEVELS, this.progress),
+      starsTotal: LEVELS.length * STARS_PER_LEVEL,
       best: this.best,
       paintStory: (canvas) => {
         const ctx = paintStart(canvas);
@@ -243,10 +246,12 @@ export class Game {
         facts: levelFacts(level.length, level.friends.length),
         unlocked,
         done: p?.done === true,
-        status: !unlocked ? TEXT.levelLocked : p?.done ? TEXT.levelDone + ' · ' + friendsText(p.bestFriends, level.friends.length) : '',
+        status: !unlocked ? TEXT.levelLocked : p?.done ? TEXT.levelBest + ' ' + formatNumber(p.bestScore) : '',
         tint: [worldById(level.world).sky[0], worldById(level.world).hills[2]],
+        stars: unlocked ? levelStars(level, p) : [],
+        goals: unlocked ? starGoalTexts(level.friends.length, level.scoreGoal).join(' · ') : '',
       };
-    }), (i) => this.startLevel(i));
+    }), { got: countStars(LEVELS, this.progress), total: LEVELS.length * STARS_PER_LEVEL }, (i) => this.startLevel(i));
     this.ui.show('levels');
   }
 
@@ -287,8 +292,13 @@ export class Game {
       if (distance(run) > this.bestDistance) { this.bestDistance = distance(run); saveCount(GAME.distanceKey, this.bestDistance); }
     } else {
       const level = LEVELS[this.levelIndex];
+      const before = levelStars(level, this.progress[level.id]);
       if (run.won) { this.progress = recordWin(this.progress, level.id, run.friendsAboard, score); saveProgress(this.progress); }
-      story = { won: run.won, friends: run.friendsAboard, total: run.friends.length, hasNext: this.levelIndex + 1 < LEVELS.length };
+      const after = levelStars(level, this.progress[level.id]), goals = starGoalTexts(level.friends.length, level.scoreGoal);
+      story = {
+        won: run.won, friends: run.friendsAboard, total: run.friends.length, hasNext: this.levelIndex + 1 < LEVELS.length,
+        stars: after.map((on, k) => ({ text: goals[k], on, isNew: on && !before[k] })),
+      };
     }
     // story totals only change here, after the win is recorded
     this.checkChallenges(false);
@@ -372,6 +382,7 @@ export class Game {
       maxWheelie: run.stats.maxWheelie,
       levelsDone: LEVELS.filter((l) => this.progress[l.id]?.done).length,
       levelsWithAllFriends: LEVELS.filter((l) => (this.progress[l.id]?.bestFriends ?? 0) >= l.friends.length).length,
+      stars: countStars(LEVELS, this.progress),
     };
   }
 
@@ -403,7 +414,7 @@ export class Game {
     this.ui.showChallenges(CHALLENGES.map((c) => ({
       text: challengeText(c.kind, c.target),
       reward: c.reward,
-      value: Math.max(this.challenges.best[c.id] ?? 0, c.kind === 'levelsDone' || c.kind === 'allFriends' ? challengeValue(c, this.challengeContext()) : 0),
+      value: Math.max(this.challenges.best[c.id] ?? 0, isStoryTotal(c.kind) ? challengeValue(c, this.challengeContext()) : 0),
       target: c.target,
       done: done.has(c.id),
     })), challengesSummaryText(done.size, CHALLENGES.length));

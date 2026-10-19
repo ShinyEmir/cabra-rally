@@ -12,7 +12,7 @@ import { drawAnimalStanding } from './draw-animal';
 import { drawCar, type CarLook } from './draw-car';
 import { drawParticles, type Particle } from './particles';
 import { INK, roundRect } from './shapes';
-import type { PropKind, WorldSpec } from './worlds';
+import type { WorldSpec } from './worlds';
 
 /** Everything the scene needs besides the run itself. */
 export interface SceneLook {
@@ -22,8 +22,37 @@ export interface SceneLook {
 
 const SKY = {
   cloud: 'rgba(255,255,255,0.85)',
+  nightCloud: 'rgba(200,205,240,0.18)',
   clouds: 6,
   wave: 'rgba(255,255,255,0.5)',
+  stars: 70,
+  starColor: '255,250,225',
+  moonGlow: 'rgba(255,250,220,0.13)',
+  moonSpot: 'rgba(60,60,110,0.12)',
+} as const;
+
+/** Sharp mountains for the far layer, sized in meters (times the screen scale). */
+const PEAKS = {
+  /** Distance between peaks before jitter. */
+  width: 5.5,
+  minHeight: 1.7,
+  extraHeight: 1.7,
+  /** Share of a peak's height covered by snow. */
+  snowShare: 0.3,
+} as const;
+
+/** One big volcano behind the far hills, repeated every so many meters of its own parallax. */
+const VOLCANO = {
+  par: 0.06,
+  every: 45,
+  /** Where it first stands, in meters of its parallax layer, so it shows at the start of a run. */
+  first: 11,
+  halfBase: 6,
+  height: 4.4,
+  crater: 0.9,
+  color: '#8a6a68',
+  rim: '#e0764a',
+  smoke: 'rgba(95,80,82,0.32)',
 } as const;
 
 interface HillLayer { par: number; amp: number; wl: number; base: number }
@@ -103,9 +132,92 @@ function drawSea(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, layer:
   ctx.stroke();
 }
 
+/** Sharp peaks with snowy tops along a far layer. */
+function drawPeaks(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, layer: HillLayer, color: string, snow: string | undefined): void {
+  const { W, H, S } = scr;
+  const by = H * layer.base + cam.y * S * layer.par * 0.5;
+  const span = PEAKS.width * S, off = cam.x * S * layer.par;
+  const k0 = Math.floor(off / span) - 1, k1 = Math.ceil((off + W) / span) + 1;
+  // valley and apex points, alternating
+  const pts: Array<[number, number]> = [];
+  for (let k = k0; k <= k1; k++) {
+    const x = k * span - off;
+    pts.push([x, by - S * 0.5 * hash01(k * 2.3 + 0.7)]);
+    pts.push([x + span * (0.35 + 0.3 * hash01(k * 4.1)), by - S * (PEAKS.minHeight + PEAKS.extraHeight * hash01(k * 1.9 + 3))]);
+  }
+  pts.push([(k1 + 1) * span - off, by]);
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.moveTo(pts[0][0], H);
+  for (const [x, y] of pts) ctx.lineTo(x, y);
+  ctx.lineTo(pts[pts.length - 1][0], H); ctx.closePath(); ctx.fill();
+  if (!snow) return;
+  ctx.fillStyle = snow;
+  for (let i = 1; i < pts.length - 1; i += 2) {
+    const [ax, ay] = pts[i], [lx0, ly0] = pts[i - 1], [rx0, ry0] = pts[i + 1];
+    const f = PEAKS.snowShare;
+    const lx = ax + (lx0 - ax) * f, ly = ay + (ly0 - ay) * f, rx = ax + (rx0 - ax) * f, ry = ay + (ry0 - ay) * f;
+    const dip = S * 0.18;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(rx, ry);
+    ctx.lineTo(lx + (rx - lx) * 0.72, ly + (ry - ly) * 0.72 + dip);
+    ctx.lineTo(lx + (rx - lx) * 0.5, ly + (ry - ly) * 0.5 - dip * 0.3);
+    ctx.lineTo(lx + (rx - lx) * 0.25, ly + (ry - ly) * 0.25 + dip);
+    ctx.lineTo(lx, ly); ctx.closePath(); ctx.fill();
+  }
+}
+
+/** The volcano landmark with a glowing crater and drifting smoke, behind the far hills. */
+function drawVolcano(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, t: number): void {
+  const { W, H, S } = scr;
+  const by = H * HILLS[0].base + cam.y * S * VOLCANO.par * 0.5 + S * 0.6;
+  const off = cam.x * VOLCANO.par;
+  const span = VOLCANO.every;
+  const k0 = Math.floor((off - VOLCANO.first - VOLCANO.halfBase) / span), k1 = Math.ceil((off + W / S - VOLCANO.first + VOLCANO.halfBase) / span);
+  for (let k = k0; k <= k1; k++) {
+    const cx = (VOLCANO.first + k * span - off) * S;
+    const hb = VOLCANO.halfBase * S, top = by - VOLCANO.height * S, cr = VOLCANO.crater * S;
+    // smoke first, so the cone covers the bottom of the plume
+    ctx.fillStyle = VOLCANO.smoke;
+    for (let i = 0; i < 6; i++) {
+      const life = (t * 0.12 + i / 6) % 1;
+      const px = cx + S * (life * 2.2 + Math.sin(life * 5 + i) * 0.3), py = top - S * (0.2 + life * 3.2);
+      ctx.beginPath(); ctx.arc(px, py, S * (0.45 + life * 0.9), 0, TAU); ctx.fill();
+    }
+    ctx.fillStyle = VOLCANO.color;
+    ctx.beginPath(); ctx.moveTo(cx - hb, by);
+    ctx.quadraticCurveTo(cx - hb * 0.35, by - VOLCANO.height * S * 0.55, cx - cr, top);
+    ctx.lineTo(cx + cr, top);
+    ctx.quadraticCurveTo(cx + hb * 0.35, by - VOLCANO.height * S * 0.55, cx + hb, by);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = VOLCANO.rim; ctx.lineWidth = Math.max(1.5, S * 0.12); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cx - cr * 0.8, top + S * 0.04); ctx.lineTo(cx + cr * 0.8, top + S * 0.04); ctx.stroke();
+  }
+}
+
+/** Twinkling stars and a moon, for night worlds. */
+function drawNightSky(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, t: number, moon: string): void {
+  const { W, H, S } = scr;
+  const wrap = W + S * 6;
+  for (let i = 0; i < SKY.stars; i++) {
+    const x = ((hash01(i * 7.1) * wrap - cam.x * S * 0.02) % wrap + wrap) % wrap - S * 3;
+    const y = hash01(i * 3.3 + 1) * H * 0.55;
+    const a = 0.45 + 0.55 * Math.abs(Math.sin(t * (0.8 + hash01(i) * 1.5) + i));
+    ctx.fillStyle = 'rgba(' + SKY.starColor + ',' + a.toFixed(2) + ')';
+    ctx.beginPath(); ctx.arc(x, y, S * (0.03 + 0.05 * hash01(i * 9.7)), 0, TAU); ctx.fill();
+  }
+  const mx = W * 0.8, my = H * 0.2, r = S * 0.9;
+  ctx.fillStyle = SKY.moonGlow;
+  ctx.beginPath(); ctx.arc(mx, my, r * 1.7, 0, TAU); ctx.fill();
+  ctx.fillStyle = moon;
+  ctx.beginPath(); ctx.arc(mx, my, r, 0, TAU); ctx.fill();
+  ctx.fillStyle = SKY.moonSpot;
+  for (const [dx, dy, rr] of [[-0.3, -0.2, 0.22], [0.25, 0.15, 0.3], [-0.1, 0.4, 0.14]]) {
+    ctx.beginPath(); ctx.arc(mx + dx * r, my + dy * r, rr * r, 0, TAU); ctx.fill();
+  }
+}
+
 /** One silhouette standing at (bx, by) in screen space (y down), h pixels tall. */
-function drawProp(ctx: CanvasRenderingContext2D, kind: PropKind, bx: number, by: number, h: number): void {
-  switch (kind) {
+function drawProp(ctx: CanvasRenderingContext2D, world: WorldSpec, bx: number, by: number, h: number): void {
+  switch (world.prop) {
     case 'tree':
       ctx.fillRect(bx - h * 0.06, by - h * 0.55, h * 0.12, h * 0.6);
       for (const [dx, dy, r] of [[0, -0.75, 0.3], [-0.2, -0.58, 0.22], [0.2, -0.6, 0.22]]) {
@@ -144,6 +256,59 @@ function drawProp(ctx: CanvasRenderingContext2D, kind: PropKind, bx: number, by:
         ctx.beginPath(); ctx.moveTo(bx + nx, by + ny); ctx.lineTo(bx + Math.cos(an) * len, by + Math.sin(an) * len); ctx.lineTo(bx - nx, by - ny); ctx.closePath(); ctx.fill();
       }
       break;
+    case 'pine':
+      ctx.fillRect(bx - h * 0.05, by - h * 0.35, h * 0.1, h * 0.4);
+      for (let k = 0; k < 3; k++) {
+        const base = by - h * (0.25 + k * 0.28), w = h * (0.38 - k * 0.09), top = base - h * 0.42;
+        ctx.beginPath(); ctx.moveTo(bx - w, base); ctx.lineTo(bx, top); ctx.lineTo(bx + w, base); ctx.closePath(); ctx.fill();
+        if (world.propLight) {
+          // snow on the tip of each layer
+          ctx.fillStyle = world.propLight;
+          ctx.beginPath(); ctx.moveTo(bx - w * 0.45, top + h * 0.19); ctx.lineTo(bx, top); ctx.lineTo(bx + w * 0.45, top + h * 0.19);
+          ctx.lineTo(bx + w * 0.15, top + h * 0.15); ctx.lineTo(bx - w * 0.1, top + h * 0.2); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = world.propColor;
+        }
+      }
+      break;
+    case 'corn':
+      ctx.lineWidth = Math.max(1, h * 0.05);
+      for (const [dx, k] of [[-0.18, 0.95], [0.16, 1.15]]) {
+        const sx = bx + dx * h, top = by - h * k;
+        ctx.beginPath(); ctx.moveTo(sx, by); ctx.lineTo(sx, top); ctx.stroke();
+        for (const [ly, side] of [[0.3, -1], [0.45, 1], [0.6, -1], [0.75, 1]]) {
+          const y0 = by - h * k * ly;
+          ctx.beginPath(); ctx.moveTo(sx, y0); ctx.quadraticCurveTo(sx + side * h * 0.25, y0 - h * 0.2, sx + side * h * 0.34, y0 - h * 0.02); ctx.stroke();
+        }
+        // tassel
+        for (const a of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.moveTo(sx, top); ctx.lineTo(sx + Math.sin(a) * h * 0.12, top - h * 0.12); ctx.stroke(); }
+        if (world.propLight) {
+          ctx.fillStyle = world.propLight;
+          ctx.beginPath(); ctx.ellipse(sx + h * 0.06, by - h * k * 0.52, h * 0.045, h * 0.11, 0.3, 0, TAU); ctx.fill();
+          ctx.fillStyle = world.propColor;
+        }
+      }
+      break;
+    case 'house': {
+      const w = h * 0.5, bodyH = h * 0.5, roofH = h * 0.32;
+      ctx.fillRect(bx - w, by - bodyH, w * 2, bodyH + h * 0.05);
+      ctx.beginPath(); ctx.moveTo(bx - w * 1.18, by - bodyH); ctx.lineTo(bx, by - bodyH - roofH); ctx.lineTo(bx + w * 1.18, by - bodyH); ctx.closePath(); ctx.fill();
+      ctx.fillRect(bx + w * 0.45, by - bodyH - roofH * 0.95, w * 0.22, roofH * 0.6);
+      if (world.propLight) {
+        // two windows and a door with the lights on
+        ctx.fillStyle = world.propLight;
+        const ws = h * 0.13;
+        ctx.fillRect(bx - w * 0.72, by - bodyH * 0.78, ws, ws);
+        ctx.fillRect(bx + w * 0.72 - ws, by - bodyH * 0.78, ws, ws);
+        ctx.fillRect(bx - ws * 0.5, by - bodyH * 0.55, ws, bodyH * 0.55);
+        ctx.fillStyle = world.propColor;
+      }
+      break;
+    }
+    case 'rock':
+      for (const [dx, dy, rx, ry] of [[-0.2, -0.22, 0.42, 0.3], [0.28, -0.14, 0.3, 0.2], [0.02, -0.38, 0.24, 0.2]]) {
+        ctx.beginPath(); ctx.ellipse(bx + dx * h, by + dy * h, rx * h, ry * h, 0, 0, TAU); ctx.fill();
+      }
+      break;
   }
 }
 
@@ -158,7 +323,7 @@ function drawProps(ctx: CanvasRenderingContext2D, scr: Screen, cam: Camera, laye
     const xm = k * PROPS.spacing + hash01(k * 1.3) * PROPS.spacing * 0.6;
     const sx = (xm - offset) * S;
     const h = S * PROPS.height * (0.8 + hash01(k * 5.1) * 0.6);
-    drawProp(ctx, world.prop, sx, hillY(scr, cam, layer, sx) + S * 0.1, h);
+    drawProp(ctx, world, sx, hillY(scr, cam, layer, sx) + S * 0.1, h);
   }
 }
 
@@ -168,11 +333,13 @@ export function drawBackdrop(ctx: CanvasRenderingContext2D, scr: Screen, cam: Ca
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, world.sky[0]); g.addColorStop(0.55, world.sky[1]); g.addColorStop(1, world.sky[2]);
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-  // sun
-  ctx.fillStyle = world.sun;
-  ctx.beginPath(); ctx.arc(W * 0.8, H * 0.2, S * 1.1, 0, TAU); ctx.fill();
+  if (world.night) drawNightSky(ctx, scr, cam, t, world.sun);
+  else {
+    ctx.fillStyle = world.sun;
+    ctx.beginPath(); ctx.arc(W * 0.8, H * 0.2, S * 1.1, 0, TAU); ctx.fill();
+  }
   // clouds
-  ctx.fillStyle = SKY.cloud;
+  ctx.fillStyle = world.night ? SKY.nightCloud : SKY.cloud;
   for (let i = 0; i < SKY.clouds; i++) {
     const span = W + S * 8;
     const cx = ((i * 0.31 * span - cam.x * S * 0.04 - t * S * 0.15) % span + span) % span - S * 4;
@@ -181,8 +348,12 @@ export function drawBackdrop(ctx: CanvasRenderingContext2D, scr: Screen, cam: Ca
     ctx.arc(cx, cy, S * 0.55, 0, TAU); ctx.arc(cx + S * 0.7, cy - S * 0.2, S * 0.7, 0, TAU); ctx.arc(cx + S * 1.5, cy, S * 0.5, 0, TAU);
     ctx.fill();
   }
-  if (world.sea) drawSea(ctx, scr, cam, HILLS[0], world.hills[0], t);
-  else drawHills(ctx, scr, cam, HILLS[0], world.hills[0]);
+  switch (world.far ?? 'hills') {
+    case 'sea': drawSea(ctx, scr, cam, HILLS[0], world.hills[0], t); break;
+    case 'peaks': drawPeaks(ctx, scr, cam, HILLS[0], world.hills[0], world.snow); break;
+    case 'volcano': drawVolcano(ctx, scr, cam, t); drawHills(ctx, scr, cam, HILLS[0], world.hills[0]); break;
+    case 'hills': drawHills(ctx, scr, cam, HILLS[0], world.hills[0]); break;
+  }
   drawHills(ctx, scr, cam, HILLS[1], world.hills[1]);
   drawProps(ctx, scr, cam, HILLS[2], world);
   drawHills(ctx, scr, cam, HILLS[2], world.hills[2]);

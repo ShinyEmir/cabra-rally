@@ -33,7 +33,9 @@ export const TEXT = {
   levelsTitle: 'Historia',
   levelsBack: 'Menú',
   levelLocked: 'Termina el nivel anterior',
-  levelDone: 'Completado',
+  levelBest: 'Récord:',
+  starsLabel: 'Estrellas',
+  newStar: 'Nueva',
   friendAboard: 'Amigo a bordo',
   friendsLabel: 'Amigos',
   wonTitle: 'Llegaron al estadio',
@@ -147,6 +149,7 @@ export function challengeText(kind: string, target: number): string {
     case 'wheelieTime': return 'Haz un caballito de ' + target + ' segundos';
     case 'levelsDone': return target === 1 ? 'Termina un nivel de historia' : 'Termina ' + target + ' niveles de historia';
     case 'allFriends': return target === 1 ? 'Lleva a todos los amigos al estadio en un nivel' : 'Lleva a todos los amigos en ' + target + ' niveles';
+    case 'stars': return 'Consigue ' + target + ' estrellas en historia';
     default: return kind;
   }
 }
@@ -155,8 +158,17 @@ export function challengesSummaryText(done: number, total: number): string {
   return done + ' de ' + total + ' retos cumplidos';
 }
 
-export function storyProgressText(done: number, total: number): string {
-  return done + ' de ' + total + ' niveles';
+export function storyProgressText(done: number, total: number, stars: number, starsTotal: number): string {
+  return done + ' de ' + total + ' niveles · ' + stars + ' de ' + starsTotal + ' estrellas';
+}
+
+export function starsText(got: number, total: number): string {
+  return got + '/' + total;
+}
+
+/** What each star asks for, in STAR_KINDS order (core/stars.ts). */
+export function starGoalTexts(friends: number, scoreGoal: number): string[] {
+  return ['Llegar al estadio', 'Con los ' + friends + ' amigos', formatNumber(scoreGoal) + ' puntos'];
 }
 
 export function freeBestText(best: number): string {
@@ -174,6 +186,11 @@ export const LEVEL_NAMES: Readonly<Record<string, string>> = {
   l3: 'Cerro del viento',
   l4: 'Las barrancas',
   l5: 'La gran subida',
+  l6: 'Pinos de la sierra',
+  l7: 'Entre milpas',
+  l8: 'Pueblo de noche',
+  l9: 'Paso nevado',
+  l10: 'Faldas del volcán',
 };
 
 export function levelName(id: string, index: number): string {

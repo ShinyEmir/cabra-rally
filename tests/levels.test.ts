@@ -45,6 +45,8 @@ describe('story levels (data)', () => {
       expect(best, JSON.stringify(results)).toBeDefined();
       // the bonus is part of the score
       expect(best!.score).toBeGreaterThanOrEqual(level.friends.length * STORY.friendBonus);
+      // careful driving alone is not enough for the score star: it asks for tricks
+      for (const r of results) expect(r.score).toBeLessThan(level.scoreGoal);
     });
   }
 });

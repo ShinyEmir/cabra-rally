@@ -176,11 +176,14 @@ Medido en la fase 1 con los valores actuales: con gas sostenido desde la salida,
 
 Las pruebas de paridad copian estos valores al código del prototipo antes de comparar, y una prueba exige que la lista `TUNED` de `tests/parity.test.ts` coincida con esta tabla.
 
-**Pendientes de ajuste** (anotados por Emir el 2026-10-18; la fase 3 sigue abierta y se ajusta con el tiempo):
+**Fase 3 cerrada el 2026-10-18.** Emir confirmó en su teléfono que el giro, la aceleración, el aterrizaje, la cámara y los controles se sienten bien. Los valores finales son los de la tabla de parámetros y de este registro. El panel `?ajuste` / `#ajuste` se queda como herramienta para ajustes futuros.
 
-- **Rebote al aterrizar:** atendido el 2026-10-18 (`c` de 11 a 16 y contacto de carrocería). Falta que Emir lo confirme en el teléfono.
+**Resultado de los ajustes de la fase 3:**
+
+- **Rebote al aterrizar:** resuelto (`c` de 11 a 16 y contacto de carrocería). Confirmado por Emir.
 - **Hitbox:** desde el 2026-10-18 es un dato por personaje (`CarShape` en `src/core/vehicle.ts`): la cabeza del conductor (se dibuja y choca en el mismo círculo), zonas de choque extra (orejas, sombreros) y los círculos de la carrocería que raspan sin chocar. Con `collision: "solid"` todos esos círculos se miden contra la pendiente y ninguno se hunde, ni después del choque. La regla de boca abajo y detenido sigue igual. En el panel `?ajuste` se pueden ver las zonas y cambiar el tamaño de la cabeza. En la fase 5 cada `AnimalSpec` trae su propia forma.
-- **Cámara:** sin quejas hasta ahora; falta confirmarla con calma (perilla "Cámara: alejar" del panel).
+- **Cámara:** sin cambios respecto al prototipo; confirmada por Emir. La perilla "Cámara: alejar" del panel queda disponible.
+- **Controles:** pantalla Controles con esquema clásico o pedales y flechas, lados, tamaño y opacidad (ver la sección Controles).
 
 **Pruebas automáticas que debe cumplir `physics.test.ts`:**
 

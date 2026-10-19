@@ -191,6 +191,13 @@ export class Screens {
       b.addEventListener('click', () => onPick(i));
       return b;
     }));
+    // bring the next level to play into view (the first open one not done yet, else the last open one)
+    const next = cards.findIndex((c) => c.unlocked && !c.done);
+    const target = next >= 0 ? next : cards.map((c) => c.unlocked).lastIndexOf(true);
+    requestAnimationFrame(() => {
+      const list = this.levelList, el = list.children[target] as HTMLElement | undefined;
+      if (el) list.scrollLeft = el.offsetLeft - (list.clientWidth - el.offsetWidth) / 2;
+    });
   }
 
   /** Friend counter and progress bar toward the stadium; null hides them (free mode). */

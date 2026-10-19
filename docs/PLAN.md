@@ -255,9 +255,10 @@ La configuración del terreno es un objeto `TerrainConfig` con cuatro campos: `a
 | 5 | La gran subida | 460 m | 1.15 | 1.1 | 4 | 9 |
 
 - `tests/levels.test.ts` comprueba en cada nivel que los amigos están en orden, antes de la meta y fuera de las rampas, y que un piloto automático lo termina con todos los amigos. El nivel 5 ya no lo termina el piloto que siempre acelera; hace falta uno que afloje antes de las rampas.
-- **Selector de nivel:** el botón Historia abre la lista de niveles. El primero está abierto y cada siguiente se abre al terminar el anterior. El progreso (completado, más amigos y mejor puntaje por nivel) se guarda en `localStorage` con la clave `cabra-rally-story`. Con `?ajuste` o `#ajuste` todos los niveles están abiertos, para probar.
+- **Selector de nivel:** el botón Historia abre la lista de niveles, en una sola fila que se desliza con el dedo (agregar niveles solo la alarga, nunca obliga a desplazarse hacia abajo) y que se centra sola en el siguiente nivel por jugar. El primero está abierto y cada siguiente se abre al terminar el anterior. El progreso (completado, más amigos y mejor puntaje por nivel) se guarda en `localStorage` con la clave `cabra-rally-story`. Con `?ajuste` o `#ajuste` todos los niveles están abiertos, para probar.
 - **HUD:** contador de amigos y barra de avance hacia el estadio. **Resultados:** "Llegaron al estadio" o "Te volteaste", con los amigos rescatados; al ganar aparece "Siguiente nivel", y el botón de salida regresa a la lista de niveles.
 - Los amigos todavía son las cabras del prototipo ("Cabrito a bordo"); en la fase 5 se reemplazan por los animales del reparto.
+- **Fase 4 cerrada el 2026-10-18.** Emir la probó en su teléfono: la dificultad sube bien, recoge a todos los amigos sin problema y el largo de los niveles está bien pensando en que vendrán más.
 
 ### Puntaje
 

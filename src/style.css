@@ -160,21 +160,33 @@ body {
 .track { position: relative; width: clamp(110px, 30vw, 200px); height: 12px; background: rgba(31, 58, 52, 0.55); border: 3px solid var(--ink); border-radius: 8px; overflow: hidden; }
 #progFill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--gold); }
 
-/* Level select */
-.levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; text-align: left; }
-.level { display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 44px; padding: 10px 12px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); cursor: pointer; text-align: left; font-family: var(--font-body); }
-.level small { font-weight: 800; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.75; }
-.level .level-name { font-family: var(--font-display); font-size: 20px; line-height: 1.1; color: var(--accent); }
-.level em { font-style: normal; font-weight: 800; font-size: 12px; color: var(--teal); }
+/* Level select: one row that scrolls sideways, so more levels only make the row longer.
+   The edges fade to show there is more to swipe to. */
+#levelsView .card { max-width: 900px; overflow-x: hidden; }
+.levels { --fade: 18px; position: relative; display: flex; gap: 10px; margin: 12px calc(-1 * var(--fade)) 0; padding: 4px var(--fade) 10px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--fade); scrollbar-width: none; touch-action: pan-x; text-align: left;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent); }
+.levels::-webkit-scrollbar { display: none; }
+.level { flex: 0 0 140px; scroll-snap-align: start; display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 44px; padding: 10px 12px; color: var(--ink); background: #fff; border: 3px solid var(--ink); border-radius: 16px; box-shadow: 0 5px 0 var(--ink); cursor: pointer; text-align: left; font-family: var(--font-body); }
+.level small { font-weight: 800; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; }
+.level .level-name { font-family: var(--font-display); font-size: 19px; line-height: 1.1; color: var(--accent); text-wrap: balance; }
+.level em { margin-top: auto; padding-top: 4px; font-style: normal; font-weight: 800; font-size: 12px; line-height: 1.2; color: var(--teal); }
 .level.done { background: #f3fbe9; }
 .level.locked { opacity: 0.55; cursor: default; box-shadow: 0 2px 0 var(--ink); }
 .level.locked .level-name { color: var(--ink); }
 .level:not(.locked):active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 .level:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 @media (max-height: 430px) {
-  .levels { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
-  .level { padding: 6px 10px; }
+  .levels { margin-top: 8px; }
+  .level { flex-basis: 128px; padding: 7px 10px; }
   .level .level-name { font-size: 17px; }
 }
-#levelsView .card { max-width: 720px; }
-#levelsView .levels { grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+
+/* Thin, quiet scrollbars where a card still has to scroll (small screens) */
+.card { scrollbar-width: thin; scrollbar-color: rgba(31, 58, 52, 0.35) transparent; }
+.card::-webkit-scrollbar { width: 6px; }
+.card::-webkit-scrollbar-thumb { background: rgba(31, 58, 52, 0.35); border-radius: 3px; }
+.card::-webkit-scrollbar-track { background: transparent; }
+/* centers the row when it fits, and still scrolls from the first card when it does not */
+.level:first-child { margin-left: auto; }
+.level:last-child { margin-right: auto; }

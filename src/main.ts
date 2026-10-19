@@ -1,9 +1,11 @@
 import './style.css';
+import { registerSW } from 'virtual:pwa-register';
 import { Sfx } from './audio/sfx';
 import { Game } from './game';
 import { createKeyboard } from './input/keyboard';
 import { createTouchControls } from './input/pedals';
 import { Screens } from './ui/screens';
+import { setupInstall } from './ui/install';
 import { isTuningEnabled, setupTuning } from './ui/tuning';
 
 const ui = new Screens();
@@ -64,3 +66,6 @@ if (isTuningEnabled()) {
 }
 
 game.start();
+setupInstall(document.getElementById('btnInstall') as HTMLButtonElement, document.getElementById('iosInstallHint') as HTMLElement);
+// offline support and installation (the service worker only exists in the production build)
+registerSW({ immediate: true });

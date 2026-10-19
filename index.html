@@ -3,11 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#7fcfd0" />
+    <meta name="theme-color" content="#1f3a34" />
+    <meta name="description" content="Carrito por colinas con animales de México. Haz volteretas y lleva a tus amigos al estadio." />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Cerro Arriba" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
     <title>Cerro Arriba</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" />
+    <!-- fonts load without blocking the first paint; the fallback faces show until they arrive -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@700;800&display=swap" /></noscript>
   </head>
   <body>
     <canvas id="world" data-t-label="canvasLabel"></canvas>
@@ -55,6 +64,7 @@
       </div>
       <div class="home-side">
         <button class="side-btn" id="btnCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="9" r="4.2" /><path d="M4.5 20.5c1.2-4 4-5.8 7.5-5.8s6.3 1.8 7.5 5.8" /></svg><span data-t="characters"></span></button>
+        <button class="side-btn" id="btnInstall" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" /></svg><span data-t="install"></span></button>
         <button class="side-btn" id="btnHomeStory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2.5 3.5L16 11H5" /></svg><span data-t="storyMode"></span></button>
       </div>
       <div class="home-title">
@@ -62,6 +72,7 @@
         <p class="tagline stroke" data-t="tagline"></p>
         <p class="best stroke" id="bestLine" hidden></p>
         <p class="rotate stroke" data-t="rotateHint"></p>
+        <p class="install-hint stroke" id="iosInstallHint" data-t="iosInstallHint" hidden></p>
       </div>
       <button class="cta" id="btnPlay"><span data-t="play"></span><svg viewBox="0 0 36 24" aria-hidden="true"><path d="m4 5 7 7-7 7M14 5l7 7-7 7M24 5l7 7-7 7" /></svg></button>
     </div>

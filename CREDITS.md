@@ -15,4 +15,8 @@ Recursos usados en Cerro Arriba, con su origen y licencia.
 | Lilita One | Juan Montoreano | SIL Open Font License 1.1 | Google Fonts (fonts.google.com/specimen/Lilita+One) | Títulos, puntaje y botones |
 | Nunito | Vernon Adams, Cyreal, Jacques Le Bailly | SIL Open Font License 1.1 | Google Fonts (fonts.google.com/specimen/Nunito) | Textos del menú y etiquetas |
 
-Por ahora se cargan desde Google Fonts. Para que el juego funcione sin internet (fase 6) hay que servirlas desde el propio sitio; la licencia lo permite.
+Se cargan desde Google Fonts y el service worker guarda una copia tras la primera visita, para que el juego abra sin internet. La licencia también permite servirlas desde el propio sitio si algún día se prefiere.
+
+## Íconos de la app
+
+Dibujados con el código del propio juego (el ajolote sobre el cerro) y guardados en `public/icons/`.

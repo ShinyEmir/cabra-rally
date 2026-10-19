@@ -423,6 +423,15 @@ El juego sale primero como web gratuita e instalable, y solo después se evalúa
 - En Android, Chrome ofrece instalar el juego. En iPhone no hay aviso automático: el jugador usa Compartir y luego Agregar a pantalla de inicio. La pantalla de menú debe explicarlo en una línea.
 - Probar en Safari de iPhone y en Chrome de Android: el audio solo suena tras un toque, y `localStorage` puede estar vacío en navegación privada.
 
+**Hecho en la fase 6 (2026-10-19):**
+
+- **PWA:** `vite-plugin-pwa` en `vite.config.ts` con el manifiesto (Cerro Arriba, `es-MX`, pantalla completa, horizontal, íconos de 192 y 512 y uno *maskable*) y un service worker que guarda todo el juego. Las fuentes de Google Fonts se guardan en caché tras la primera visita, así que el juego abre sin internet desde la segunda vez. Comprobado: con el servidor apagado, la página carga completa, fuentes incluidas.
+- **Íconos:** dibujados con el mismo código del juego (el ajolote sobre el cerro), en `public/icons/`: 192, 512, *maskable* 512, ícono de iPhone 180 y favicon 32.
+- **Instalar:** botón "Instalar" en el inicio cuando Chrome lo permite (Android y computadora); en iPhone, una línea con los dos toques (Compartir y luego Agregar a pantalla de inicio). Nada de esto aparece si el juego ya está instalado.
+- **Rutas relativas** (`base: './'`): el mismo build funciona en la raíz de un dominio o en una subcarpeta.
+- **Publicación:** `.github/workflows/deploy.yml` prueba y compila en cada push a `main` y publica en GitHub Pages. Mientras el repositorio sea privado, el paso de publicar se salta. Para activarlo, Emir hace público el repositorio y en Settings > Pages elige "GitHub Actions"; el enlace queda como `https://shinyemir.github.io/cabra-rally/`. Si prefiere dejarlo privado: Cloudflare Pages o Netlify con comando `npm run build` y carpeta `dist`.
+- **Lighthouse 13.5** (versión de producción, simulación de teléfono): rendimiento 98 a 99, accesibilidad 100, buenas prácticas 100, SEO 100. Lighthouse 12 y posteriores ya no tienen la categoría "PWA"; la instalabilidad se comprobó a mano (manifiesto válido, íconos, service worker activo que controla la página). Para pasar de 87 a 98 se cargaron las fuentes sin bloquear el primer dibujado y se agregó `robots.txt`.
+
 ### Etapa 2: tiendas (solo si el juego lo amerita)
 
 - El mismo proyecto web se empaqueta como app nativa con **Capacitor**, sin reescribir el juego.

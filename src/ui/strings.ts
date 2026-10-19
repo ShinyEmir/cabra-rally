@@ -7,6 +7,8 @@ export const TEXT = {
   freeMode: 'Modo libre',
   freeModeHint: 'Recorre el cerro sin fin y rompe tu récord.',
   play: '¡A correr!',
+  install: 'Instalar',
+  iosInstallHint: 'Para instalarlo en iPhone: toca Compartir y luego Agregar a pantalla de inicio.',
   home: 'Inicio',
   modes: 'Modos',
   back: 'Atrás',

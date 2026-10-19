@@ -386,7 +386,8 @@ El conductor se elegirá en una pantalla de personajes en una fase posterior. La
 - **Pantalla de personajes:** desde el menú. Vista previa del carro con el conductor y el color elegidos, fila deslizable con los 7 animales y sus rasgos, y los colores del carro. La elección se guarda en `cabra-rally-garage`; también se muestran las monedas guardadas.
 - **Sonido:** `src/audio/sfx.ts`, todo generado con Web Audio, sin archivos: motor con tono según la velocidad y el gas, moneda, voltereta (una nota más por cada voltereta del salto), tiempo en el aire, aterrizaje limpio, caballito, golpe al aterrizar, choque, recoger amigo y victoria. Arranca con el primer toque o tecla. Botón de silencio en la partida y en el menú, guardado en `cabra-rally-muted`.
 - **Pulido del arte (pedido por Emir el 2026-10-18):** todas las figuras tienen la misma luz suave (brillo arriba atrás, sombra abajo) y contorno oscuro. Los animales ganaron ojos con destello, mejillas, colas y patas con forma, patrones en el cuerpo (bandas, rosetas, pecas) y sombra en el piso; los amigos saludan con una pata al frente. El carro tiene carrocería con curvas, guardafangos, rejilla, escape, parabrisas con reflejo, volante, asiento, rines con birlos y sombra en el piso que se encoge al saltar. El conductor se ve sentado, con el brazo (o el ala) en el volante.
-- **Sin rastros del prototipo:** ya no hay cabra ni carro naranja en el juego. La paleta de la interfaz (naranja, verde azulado, crema, tinta) se conserva, como dice la sección de reglas.
+- **Sin rastros del prototipo:** ya no hay cabra ni carro naranja en el juego.
+- **Fase 5 cerrada el 2026-10-19.** Emir revisó en su teléfono los personajes, el carro, los mundos, el sonido y las interfaces nuevas. La paleta de la interfaz (naranja, verde azulado, crema, tinta) se conserva, como dice la sección de reglas.
 
 ## Fases de trabajo
 
